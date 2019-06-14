@@ -141,7 +141,7 @@ become out of date.
 
 ## Packaging
 
-1.  **git clone https://gitlab.com/arvgord/dicom-fuse.git**
+1.  **git clone https://github.com/GoogleCloudPlatform/healthcare-api-dicom-fuse.git**
 2.  **mvn package** in the dicom-fuse folder in the terminal (for packaging to
     jar).
 
