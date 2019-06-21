@@ -9,7 +9,7 @@
   </properties>
 
   <groupId>com.google</groupId>
-  <artifactId>dicomwebfuse</artifactId>
+  <artifactId>healthcare-api-dicom-fuse</artifactId>
   <version>0.1</version>
 
   <repositories>
