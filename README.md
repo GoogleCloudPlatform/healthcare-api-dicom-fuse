@@ -35,7 +35,7 @@ To run DICOMFuse:
 
 1.  Download the latest JAR from the releases tab.
 2.  To start DICOMFuse, open a terminal in the DICOMFuse folder and input `java
-    -jar dicom-fuse-0.1.jar [options]`
+    -jar healthcare-api-dicom-fuse-0.1.jar [options]`
 3.  To stop DICOMFuse, press CTRL+C.
 
 ### Mount options
@@ -76,7 +76,7 @@ You can specify the following mount options when you start DICOMFuse:
 
 > Note: * are required options. \
 > The current implementation supports 15,000 results in folders. \
-> For Windows, use `java -Dfile.encoding=UTF8 -jar dicom-fuse-0.1.jar [options]`
+> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-0.1.jar [options]`
 
 ## Description
 
@@ -142,10 +142,10 @@ become out of date.
 ## Packaging
 
 1.  **git clone https://github.com/GoogleCloudPlatform/healthcare-api-dicom-fuse.git**
-2.  **mvn package** in the dicom-fuse folder in the terminal (for packaging to
-    jar).
+2.  **mvn package** in the healthcare-api-dicom-fuse folder in the terminal (for 
+    packaging to jar).
 
-There is a **dicom-fuse-0.1.jar** file in the **dicom-fuse/target** folder.
+There is a **healthcare-api-dicom-fuse-0.1.jar** file in the **healthcare-api-dicom-fuse/target** folder.
 
 ## License
 
