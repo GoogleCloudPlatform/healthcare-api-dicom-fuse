@@ -27,7 +27,7 @@ public class Arguments {
   @Parameter(
       names = {"--datasetAddr", "-a"},
       description = "Web address to the Dataset. " +
-          "Example: https://healthcare.googleapis.com/STAGE/projects/PROJECT/locations/" +
+          "Example: https://healthcare.googleapis.com/v1beta1/projects/PROJECT/locations/" +
           "LOCATION/datasets/DATASET",
       required = true,
       converter = CloudConfigurationConverter.class
@@ -46,14 +46,14 @@ public class Arguments {
 
   @Parameter(
       names = {"--cacheTime", "-t"},
-      description = "Each value in this option is measured in seconds. For optimization of the "
-          + "DICOMFuse, caching DICOM Store folders, Study folders, Series folders, list of "
-          + "Instances(first parameter in option), and opened Instances files(second parameter) "
-          + "were included. Caching opened Instances files are performed to the temporary folder in "
-          + "user space on the disk. Caching other objects are performed to the RAM. After closing "
-          + "DICOMFuse or, if cached files out of date, they will be deleted. If you delete an "
-          + "Instance file locally, the cache will be updated. If you upload an Instance file, the "
-          + "cache will be updated.",
+      description = "Each value in this option is measured in seconds. To optimize DICOMFuse, the "
+          + "following resources are cached: DICOM store folders, Study folders, Series folders, "
+          + "list of Instances (first parameter in option), and opened Instances files (second "
+          + "parameter). Opened Instance files are cached to the temporary folder in the user space "
+          + "on disk. Other objects are cached to RAM. Cached files will be deleted if you close "
+          + "DICOMFuse or if the cached files become out of date. If you delete an Instance file "
+          + "locally, the cache will be updated. If you upload an Instance file, the cache will be "
+          + "updated.",
       converter = CacheTimeConverter.class
   )
   public CacheTime cacheTime = new CacheTime(60, 300);
@@ -61,15 +61,16 @@ public class Arguments {
   @Parameter(
       names = {"--cacheSize", "-s"},
       description = "Maximum cache size in megabytes for cached instances. "
-          + "The maximum file size that can be download/upload is cacheSize / 4",
+          + "The maximum file size that can be downloaded/uploaded is cacheSize / 4",
       converter = LongConverter.class
   )
   public long cacheSize = 10000;
 
   @Parameter(
       names = {"--enableDeletion", "-d"},
-      description = "Some programs can delete files and you can do this, including accidental "
-          + "deletion. If you don't want to delete files, you can set --enableDeletion=false",
+      description = "Some programs can delete files and deletion can also be done manually. "
+          + "Sometimes accidental deletions can occur. If you don't want to delete files, you can "
+          + "set --enableDeletion=false",
       converter = BooleanConverter.class
   )
   public boolean enableDeletion = true;
