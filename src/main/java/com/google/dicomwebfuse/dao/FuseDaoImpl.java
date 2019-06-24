@@ -15,6 +15,7 @@
 package com.google.dicomwebfuse.dao;
 
 import static com.google.dicomwebfuse.dao.Constants.APPLICATION_DICOM_JSON_CHARSET_UTF8;
+import static com.google.dicomwebfuse.dao.Constants.APPLICATION_DICOM_TRANSFER_SYNTAX;
 import static com.google.dicomwebfuse.dao.Constants.APPLICATION_JSON_CHARSET_UTF8;
 import static com.google.dicomwebfuse.dao.Constants.BEARER;
 import static com.google.dicomwebfuse.dao.Constants.HEALTHCARE_HOST;
@@ -22,7 +23,6 @@ import static com.google.dicomwebfuse.dao.Constants.MAX_INSTANCES_IN_SERIES;
 import static com.google.dicomwebfuse.dao.Constants.MAX_SERIES_IN_STUDY;
 import static com.google.dicomwebfuse.dao.Constants.MAX_STUDIES_IN_DICOM_STORE;
 import static com.google.dicomwebfuse.dao.Constants.MULTIPART_RELATED_TYPE_APPLICATION_DICOM_BOUNDARY;
-import static com.google.dicomwebfuse.dao.Constants.MULTIPART_RELATED_TYPE_APPLICATION_DICOM_TRANSFER_SYNTAX;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_INCLUDE_FIELD;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_LIMIT;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_OFFSET;
@@ -57,12 +57,10 @@ import com.google.dicomwebfuse.entities.Instance;
 import com.google.dicomwebfuse.entities.Series;
 import com.google.dicomwebfuse.entities.Study;
 import com.google.dicomwebfuse.exception.DicomFuseException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -74,10 +72,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.apache.http.Header;
-import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -345,7 +340,7 @@ public class FuseDaoImpl implements FuseDao {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
       URI uri = uriBuilder.build();
       HttpGet request = new HttpGet(uri);
-      request.addHeader(ACCEPT, MULTIPART_RELATED_TYPE_APPLICATION_DICOM_TRANSFER_SYNTAX);
+      request.addHeader(ACCEPT, APPLICATION_DICOM_TRANSFER_SYNTAX);
       request.addHeader(CONTENT_TYPE, APPLICATION_DICOM_JSON_CHARSET_UTF8);
       GoogleCredentials credentials = authADC.getCredentials();
       String tokenValue = credentials.getAccessToken().getTokenValue();
@@ -353,21 +348,11 @@ public class FuseDaoImpl implements FuseDao {
       try (CloseableHttpResponse response = httpclient.execute(request)) {
         checkStatusCode(response, uri);
 
-        Header header = response.getFirstHeader(CONTENT_TYPE);
-        HeaderElement[] headerElements = header.getElements();
-        NameValuePair boundaryParam = headerElements[0].getParameterByName("boundary");
-        String boundary = boundaryParam.getValue();
-        int boundaryLength = boundary.length() + 8; // {bounadary} + {/r/n----}
-
         HttpEntity entity = response.getEntity();
-        try (InputStream is = cutHeadersAndTopBoundary(entity.getContent())) {
+        try (InputStream is = entity.getContent()) {
           Files.copy(is, instanceDataPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
           throw new DicomFuseException(e);
-        }
-        try (FileChannel outChan = new FileOutputStream(instanceDataPath.toFile(), true)
-            .getChannel()) {
-          outChan.truncate(Files.size(instanceDataPath) - boundaryLength);
         }
       }
     } catch (IOException | URISyntaxException e) {
@@ -420,34 +405,6 @@ public class FuseDaoImpl implements FuseDao {
     } catch (IOException | URISyntaxException e) {
       throw new DicomFuseException(e);
     }
-  }
-
-  /**
-   * This method cuts only the top headers and the top boundary besides the down boundary.
-   *
-   * @param inputStream without cuts body.
-   * @return cut inputStream.
-   * @throws IOException when read method throws an exception.
-   */
-  private InputStream cutHeadersAndTopBoundary(InputStream inputStream) throws IOException {
-    int b;
-    int r = 0x0d; //"\r"
-    int n = 0x0a; //"\n"
-    while ((b = inputStream.read()) != -1) {
-      if (b == r) {
-        b = inputStream.read();
-        if (b == n) {
-          b = inputStream.read();
-          if (b == r) {
-            b = inputStream.read();
-            if (b == n) {
-              break;
-            }
-          }
-        }
-      }
-    }
-    return inputStream;
   }
 
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
