@@ -1,5 +1,24 @@
 steps:
+# Installs DICOMFuse
 - name: 'maven:3.6.1-jdk-8'
   args:
   - 'mvn'
   - 'install'
+# Runs integration tests
+- name: 'google/cloud-sdk:251.0.0'
+  args:
+  - 'bash'
+  - './build/build.sh'
+  - '${_JAR}'
+  - '${_STAGE}'
+  - '${_PROJECT}'
+  - '${_LOCATION}'
+  - '${_DATASET}'
+  timeout: 600s
+
+substitutions:
+  _JAR: healthcare-api-dicom-fuse-0.1.jar
+  _STAGE: v1beta1
+  _PROJECT: healthcare-api-215503
+  _LOCATION: europe-west2
+  _DATASET: healthcare-api-dicom-fuse-integration-test
