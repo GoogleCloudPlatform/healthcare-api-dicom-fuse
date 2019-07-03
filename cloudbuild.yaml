@@ -9,7 +9,6 @@ steps:
   args:
   - 'bash'
   - './build/build.sh'
-  - '${_JAR}'
   - '${_STAGE}'
   - '${_PROJECT}'
   - '${_LOCATION}'
@@ -17,8 +16,7 @@ steps:
   timeout: 600s
 
 substitutions:
-  _JAR: healthcare-api-dicom-fuse-0.1.jar
   _STAGE: v1beta1
-  _PROJECT: healthcare-api-215503
-  _LOCATION: europe-west2
-  _DATASET: healthcare-api-dicom-fuse-integration-test
+  _PROJECT: gcp-healthcare-oss-test
+  _LOCATION: us-central1
+  _DATASET: healthcare-api-dicom-fuse-test

@@ -13,23 +13,27 @@
 # limitations under the License.
 
 #!/bin/bash
-JAR_NAME=$1
-STAGE=$2
-PROJECT=$3
-LOCATION=$4
-DATASET=$5
+STAGE=$1
+PROJECT=$2
+LOCATION=$3
+DATASET=$4
 # Creates unique DICOM Store name
 DICOM_STORE_NAME=$(openssl rand -hex 12)
 # Creates a folder to mount DICOMFuse
 MOUNT_FOLDER='dicom'
 mkdir $MOUNT_FOLDER
 # Creates unique DICOM Store
-gcloud alpha healthcare dicom-stores create $DICOM_STORE_NAME --location=$LOCATION --dataset=$DATASET --quiet
+gcloud alpha healthcare dicom-stores create $DICOM_STORE_NAME \
+--location=$LOCATION --dataset=$DATASET --quiet
 # Installs libfuse
 apt update
 apt install -y libfuse2
+# Gets JAR version from pom.xml
+JAR_VERSION=$(grep -m 1 "<version>" /workspace/pom.xml | grep -Eo "[[:digit:]]+.[[:digit:]]+")
+JAR_NAME="healthcare-api-dicom-fuse-"$JAR_VERSION".jar"
 # Runs DICOMFuse
-java -jar /workspace/target/$JAR_NAME -a 'https://healthcare.googleapis.com/'$STAGE'/projects/'$PROJECT'/locations/'$LOCATION'/datasets/'$DATASET -p /workspace/$MOUNT_FOLDER &
+ADDR='https://healthcare.googleapis.com/'$STAGE'/projects/'$PROJECT'/locations/'$LOCATION'/datasets/'$DATASET
+java -jar /workspace/target/$JAR_NAME -a $ADDR -p /workspace/$MOUNT_FOLDER &
 # Waits mounting DICOMFuse
 for ((;;))
 do
@@ -52,7 +56,8 @@ DIFF_RESULT=$?
 rm /workspace/$MOUNT_FOLDER/$DICOM_STORE_NAME/111/111/111.dcm
 RM_RESULT=$?
 # Deletes created DICOMStore
-gcloud alpha healthcare dicom-stores delete $DICOM_STORE_NAME --location=$LOCATION --dataset=$DATASET --quiet
+gcloud alpha healthcare dicom-stores delete $DICOM_STORE_NAME \
+--location=$LOCATION --dataset=$DATASET --quiet
 # Checks exit codes of all operations
 if [[ $CP_TO_DICOM_STORE_RESULT != 0 || $CP_FROM_DICOM_STORE_RESULT != 0 || $DIFF_RESULT != 0 || $RM_RESULT != 0 ]]; then
     exit 1;
