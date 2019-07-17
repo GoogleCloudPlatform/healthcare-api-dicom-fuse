@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,53 +14,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
-STAGE=$1
-PROJECT=$2
-LOCATION=$3
-DATASET=$4
-# Creates unique DICOM Store name
-DICOM_STORE_NAME=$(openssl rand -hex 12)
-# Creates a folder to mount DICOMFuse
-MOUNT_FOLDER='dicom'
-mkdir $MOUNT_FOLDER
-# Creates unique DICOM Store
-gcloud alpha healthcare dicom-stores create $DICOM_STORE_NAME \
---location=$LOCATION --dataset=$DATASET --quiet
-# Installs libfuse
+readonly STAGE="${1}"
+readonly PROJECT="${2}"
+readonly LOCATION="${3}"
+readonly DATASET="${4}"
+# Create unique DICOM Store name
+readonly dicom_store_name="$(openssl rand -hex 12)"
+# Create a folder to mount DICOMFuse
+readonly mount_folder="dicom"
+mkdir "${mount_folder}"
+# Create unique DICOM Store
+gcloud alpha healthcare dicom-stores create "${dicom_store_name}" \
+--location="${LOCATION}" \
+--dataset="${DATASET}" \
+--quiet
+# Install libfuse
 apt update
 apt install -y libfuse2
-# Gets JAR version from pom.xml
-JAR_VERSION=$(grep -m 1 "<version>" /workspace/pom.xml | grep -Eo "[[:digit:]]+.[[:digit:]]+")
-JAR_NAME="healthcare-api-dicom-fuse-"$JAR_VERSION".jar"
-# Runs DICOMFuse
-ADDR='https://healthcare.googleapis.com/'$STAGE'/projects/'$PROJECT'/locations/'$LOCATION'/datasets/'$DATASET
-java -jar /workspace/target/$JAR_NAME -a $ADDR -p /workspace/$MOUNT_FOLDER &
-# Waits mounting DICOMFuse
-for ((;;))
-do
-if [[ -d /workspace/$MOUNT_FOLDER/$DICOM_STORE_NAME/ ]]; then
-break
-fi
+# Get JAR version from pom.xml
+jar_version="$(grep -m 1 "<version>" /workspace/pom.xml \
+  | grep -Eo "[[:digit:]]+.[[:digit:]]+")"
+jar_name="healthcare-api-dicom-fuse-${jar_version}.jar"
+# Run DICOMFuse
+addr="https://healthcare.googleapis.com/${STAGE}/projects/${PROJECT}/locations/${LOCATION}/datasets/${DATASET}"
+java -jar "/workspace/target/${jar_name}" -a "${addr}" -p "/workspace/${mount_folder}" &
+# Wait mounting DICOMFuse
+for ((;;)); do
+  if [[ -d "/workspace/${mount_folder}/${dicom_store_name}/" ]]; then
+    break
+  fi
 done
-# Copies example.dcm into created DICOM Store. example.dcm has 111 StudyInstanceUID 111
-# SeriesInstanceUID and 111 SOPInstanceUID
-cp /workspace/build/example.dcm /workspace/$MOUNT_FOLDER/$DICOM_STORE_NAME/
-CP_TO_DICOM_STORE_RESULT=$?
-# Copies uploaded example.dcm from DICOM Store to the local workspace folder. Downloaded dcm file
-# has SOPInstanceUID.dcm name or 111.dcm
-cp /workspace/$MOUNT_FOLDER/$DICOM_STORE_NAME/111/111/111.dcm /workspace/build/
-CP_FROM_DICOM_STORE_RESULT=$?
-# Runs files comparison using the diff app
+# Copy example.dcm into created DICOM Store. example.dcm has 111
+# StudyInstanceUID 111 SeriesInstanceUID and 111 SOPInstanceUID
+cp /workspace/build/example.dcm "/workspace/${mount_folder}/${dicom_store_name}/"
+cp_to_dicom_store_result=$?
+# Copy uploaded example.dcm from DICOM Store to the local workspace folder.
+# Downloaded dcm file has SOPInstanceUID.dcm name or 111.dcm
+cp "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm" /workspace/build/
+cp_from_dicom_store_result=$?
+# Run files comparison using the diff app
 diff /workspace/build/example.dcm /workspace/build/111.dcm
-DIFF_RESULT=$?
-# Runs 111.dcm instance deletion in DICOM Store
-rm /workspace/$MOUNT_FOLDER/$DICOM_STORE_NAME/111/111/111.dcm
-RM_RESULT=$?
-# Deletes created DICOMStore
-gcloud alpha healthcare dicom-stores delete $DICOM_STORE_NAME \
---location=$LOCATION --dataset=$DATASET --quiet
-# Checks exit codes of all operations
-if [[ $CP_TO_DICOM_STORE_RESULT != 0 || $CP_FROM_DICOM_STORE_RESULT != 0 || $DIFF_RESULT != 0 || $RM_RESULT != 0 ]]; then
-    exit 1;
-fi
+diff_result=$?
+# Run 111.dcm instance deletion in DICOM Store
+rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
+rm_result=$?
+# Delete created DICOMStore
+gcloud alpha healthcare dicom-stores delete "${dicom_store_name}" \
+--location=$LOCATION \
+--dataset=$DATASET \
+--quiet
+# Check exit codes of all operations
+check_exit_code() {
+  exit_code="${1}"
+  error_message="${2}"
+  if [[ "${exit_code}" != 0 ]]; then
+    echo "${error_message}"
+    exit 1
+  fi
+}
+check_exit_code "${cp_to_dicom_store_result}" \
+"Copying to DICOM Store failed!"
+check_exit_code "${cp_from_dicom_store_result}" \
+"Copying from DICOM Store failed!"
+check_exit_code "${diff_result}" \
+"Files are not equal!"
+check_exit_code "${rm_result}" \
+"Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed!"
