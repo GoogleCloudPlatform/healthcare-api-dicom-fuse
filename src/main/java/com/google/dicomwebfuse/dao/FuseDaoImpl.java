@@ -383,7 +383,8 @@ public class FuseDaoImpl implements FuseDao {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
           throw new DicomFuseException(
-              "Failed to upload - " + dicomPath + "! Status code: " + statusCode + " " + uri);
+              "Failed to upload - " + dicomPath + "!" + response.getStatusLine() + " " + uri,
+              statusCode);
         }
       }
     } catch (IOException | URISyntaxException e) {
@@ -410,7 +411,8 @@ public class FuseDaoImpl implements FuseDao {
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
     int statusCode = response.getStatusLine().getStatusCode();
     if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
-      throw new DicomFuseException("Failed HTTP! Status code: " + statusCode + " " + uri);
+      throw new DicomFuseException("Failed HTTP! " + response.getStatusLine() + " " + uri,
+          statusCode);
     }
   }
 }

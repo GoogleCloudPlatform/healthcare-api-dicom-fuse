@@ -65,7 +65,7 @@ public class DicomFuse extends FuseStubFS {
       dicomFuseHelper.checkExistingObject(dicomPath);
       dicomFuseHelper.setAttr(dicomPath, this, fileStat);
     } catch (DicomFuseException e) {
-      LOGGER.debug(e);
+      LOGGER.debug("getattr error!", e);
       return -ErrorCodes.ENOENT();
     }
     return 0;

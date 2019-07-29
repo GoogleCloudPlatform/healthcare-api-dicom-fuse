@@ -14,17 +14,19 @@
 
 package com.google.dicomwebfuse.parser;
 
-import com.beust.jcommander.IStringConverter;
-import com.google.dicomwebfuse.entities.cache.CacheTime;
+import com.beust.jcommander.IParameterValidator;
+import com.beust.jcommander.ParameterException;
 
-public class CacheTimeConverter implements IStringConverter<CacheTime> {
+public class CacheTimePositiveValidator implements IParameterValidator {
 
   @Override
-  public CacheTime convert(String parameters) {
-    String[] param = parameters.split(",");
-    return new CacheTime(
-        Long.parseLong(param[0]),
-        Long.parseLong(param[1])
-    );
+  public void validate(String name, String value) throws ParameterException {
+    String[] param = value.split(",");
+    long objectsCacheTime = Long.parseLong(param[0]);
+    long instanceFilesCacheTime = Long.parseLong(param[1]);
+    if (objectsCacheTime < 0 || instanceFilesCacheTime < 0) {
+      throw new ParameterException(
+          "Parameter " + name + " should be positive (found " + value + ")");
+    }
   }
 }
