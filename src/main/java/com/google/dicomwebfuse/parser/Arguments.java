@@ -54,7 +54,8 @@ public class Arguments {
           + "DICOMFuse or if the cached files become out of date. If you delete an Instance file "
           + "locally, the cache will be updated. If you upload an Instance file, the cache will be "
           + "updated.",
-      converter = CacheTimeConverter.class
+      converter = CacheTimeConverter.class,
+      validateWith = CacheTimePositiveValidator.class
   )
   public CacheTime cacheTime = new CacheTime(60, 300);
 
@@ -62,7 +63,8 @@ public class Arguments {
       names = {"--cacheSize", "-s"},
       description = "Maximum cache size in megabytes for cached instances. "
           + "The maximum file size that can be downloaded/uploaded is cacheSize / 4",
-      converter = LongConverter.class
+      converter = LongConverter.class,
+      validateWith = CacheSizePositiveValidator.class
   )
   public long cacheSize = 10000;
 

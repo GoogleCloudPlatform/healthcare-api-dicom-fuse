@@ -29,7 +29,9 @@ class FuseConstants {
   static final List<String> WINDOWS_FORBIDDEN_PATHS = Arrays.asList(
       "autorun.inf",
       "desktop.ini",
-      "AutoRun.inf"
+      "AutoRun.inf",
+      ".jpg", // Windows 7
+      ".gif" // Windows 7
   );
   static final List<String> MAC_OS_FORBIDDEN_PATHS = Arrays.asList(
       ".localized",

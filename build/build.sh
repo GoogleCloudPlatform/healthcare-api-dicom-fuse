@@ -25,15 +25,15 @@ readonly mount_folder="dicom"
 mkdir "${mount_folder}"
 # Create unique DICOM Store
 gcloud alpha healthcare dicom-stores create "${dicom_store_name}" \
---location="${LOCATION}" \
---dataset="${DATASET}" \
---quiet
+  --location="${LOCATION}" \
+  --dataset="${DATASET}" \
+  --quiet
 # Install libfuse
 apt update
 apt install -y libfuse2
 # Get JAR version from pom.xml
 jar_version="$(grep -m 1 "<version>" /workspace/pom.xml \
-  | grep -Eo "[[:digit:]]+.[[:digit:]]+")"
+  | grep -Eo "[[:digit:]]+.[[:digit:]]+.[[:digit:]]+")"
 jar_name="healthcare-api-dicom-fuse-${jar_version}.jar"
 # Run DICOMFuse
 addr="https://healthcare.googleapis.com/${STAGE}/projects/${PROJECT}/locations/${LOCATION}/datasets/${DATASET}"
@@ -60,9 +60,9 @@ rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
 rm_result=$?
 # Delete created DICOMStore
 gcloud alpha healthcare dicom-stores delete "${dicom_store_name}" \
---location=$LOCATION \
---dataset=$DATASET \
---quiet
+  --location=$LOCATION \
+  --dataset=$DATASET \
+  --quiet
 # Check exit codes of all operations
 check_exit_code() {
   exit_code="${1}"
@@ -73,10 +73,10 @@ check_exit_code() {
   fi
 }
 check_exit_code "${cp_to_dicom_store_result}" \
-"Copying to DICOM Store failed!"
+  "Copying to DICOM Store failed!"
 check_exit_code "${cp_from_dicom_store_result}" \
-"Copying from DICOM Store failed!"
+  "Copying from DICOM Store failed!"
 check_exit_code "${diff_result}" \
-"Files are not equal!"
+  "Files are not equal!"
 check_exit_code "${rm_result}" \
-"Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed!"
+  "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed!"

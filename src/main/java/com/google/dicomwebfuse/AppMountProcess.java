@@ -17,8 +17,10 @@ package com.google.dicomwebfuse;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.FuseDao;
 import com.google.dicomwebfuse.dao.FuseDaoImpl;
+import com.google.dicomwebfuse.exception.DicomFuseException;
 import com.google.dicomwebfuse.fuse.DicomFuse;
 import com.google.dicomwebfuse.fuse.Parameters;
+import com.google.dicomwebfuse.fuse.AccessChecker;
 import com.google.dicomwebfuse.parser.Arguments;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,6 +55,20 @@ class AppMountProcess {
     OS os = Platform.getNativePlatform().getOS();
     Parameters parameters = new Parameters(fuseDAO, arguments, os);
     DicomFuse dicomFuse = new DicomFuse(parameters);
+
+    AccessChecker accessChecker = new AccessChecker(parameters);
+    try {
+      accessChecker.check();
+    } catch (DicomFuseException e) {
+      if (e.getStatusCode() == 403) {
+        LOGGER.error("Please check your Project name, Location, Dataset name in "
+            + "--datasetAddr argument. Check that Project and Dataset exist. Also, check the role "
+            + "for current account service key. The role should be Healthcare DICOM Editor.", e);
+      } else {
+        LOGGER.error("AccessChecker error!", e);
+      }
+      return;
+    }
 
     try {
       ArrayList<String> mountOptions = new ArrayList<>();

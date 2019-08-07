@@ -12,26 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.dicomwebfuse.exception;
+package com.google.dicomwebfuse.parser;
 
-public class DicomFuseException extends Exception {
+import com.beust.jcommander.IParameterValidator;
+import com.beust.jcommander.ParameterException;
 
-  private int statusCode;
+public class CacheSizePositiveValidator implements IParameterValidator {
 
-  public DicomFuseException(String message) {
-    super(message);
-  }
-
-  public DicomFuseException(Exception e) {
-    super(e);
-  }
-
-  public DicomFuseException(String message, int statusCode) {
-    super(message);
-    this.statusCode = statusCode;
-  }
-
-  public int getStatusCode() {
-    return statusCode;
+  @Override
+  public void validate(String name, String value) throws ParameterException {
+    long cacheSize = Long.parseLong(value);
+    if (cacheSize < 0) {
+      throw new ParameterException(
+          "Parameter " + name + " should be positive (found " + value + ")");
+    }
   }
 }
