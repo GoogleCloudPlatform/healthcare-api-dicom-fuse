@@ -33,7 +33,8 @@ permissions within the
 [Healthcare DICOM Editor role](https://cloud.google.com/healthcare/docs/concepts/access-control#roles).  
 Alternatively, you can specify a service account key via the `--keyFile` flag.
 The easiest way to set up credentials is to use your user credentials with the 
-[gcloud tool](https://cloud.google.com/sdk/gcloud/):  
+[gcloud tool](https://cloud.google.com/sdk/gcloud/):
+
 `gcloud auth application-default login`
 
 ## Running DICOMFuse
