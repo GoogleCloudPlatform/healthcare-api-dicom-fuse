@@ -15,19 +15,26 @@ Before running DICOMFuse, ensure that you've installed the following
 applications:
 
 *   Java SE Runtime Environment 8.
-*   [WinFps](https://github.com/billziss-gh/winfsp) for using FUSE in Windows.
+*   [WinFps](https://github.com/billziss-gh/winfsp) for using FUSE in Windows 
+    (Windows 7x64, Windows 10x64).
 *   [OSXFuse](https://osxfuse.github.io/) for using FUSE in macOS (macOS 10.14
     Mojave).
+*   [libfuse](https://github.com/libfuse/libfuse) for using FUSE in Linux, install 
+    libfuse - `sudo apt install libfuse2`
 
-> [libfuse](https://github.com/libfuse/libfuse) has been supported in Linux
-> kernel since 2.6.14 version.
+> FUSE has been supported in Linux kernel since 2.6.14 version.
 
 ### Credentials
 
-You can access the Cloud Healthcare API using
-[Google application default credentials](https://cloud.google.com/docs/authentication/production#howtheywork).
-You can set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable, or you
-can use `--keyFile` option when you launch DICOMFuse.
+DICOMFuse will use 
+[application default credentials](https://cloud.google.com/docs/authentication/production)
+to authenticate access to the Cloud Healthcare API. The identity must have the 
+permissions within the 
+[Healthcare DICOM Editor role](https://cloud.google.com/healthcare/docs/concepts/access-control#roles).  
+Alternatively, you can specify a service account key via the `--keyFile` flag.
+The easiest way to set up credentials is to use your user credentials with the 
+[gcloud tool](https://cloud.google.com/sdk/gcloud/):  
+`gcloud auth application-default login`
 
 ## Running DICOMFuse
 
@@ -35,8 +42,12 @@ To run DICOMFuse:
 
 1.  Download the latest JAR from the releases tab.
 2.  To start DICOMFuse, open a terminal in the DICOMFuse folder and input `java
-    -jar healthcare-api-dicom-fuse-0.1.jar [options]`
+    -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
 3.  To stop DICOMFuse, press CTRL+C.
+
+> ERROR and INFO logs present in the terminal. During launching DICOMFuse, logs 
+> folder will be created next to the DICOMFuse JAR, where DEBUG, INFO and ERROR logs
+> will be saved.
 
 ### Mount options
 
@@ -76,7 +87,7 @@ You can specify the following mount options when you start DICOMFuse:
 
 > Note: * are required options. \
 > The current implementation supports 15,000 results in folders. \
-> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-0.1.jar [options]`
+> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
 
 ## Description
 
@@ -145,7 +156,7 @@ become out of date.
 2.  **mvn package** in the healthcare-api-dicom-fuse folder in the terminal (for 
     packaging to jar).
 
-There is a **healthcare-api-dicom-fuse-0.1.jar** file in the **healthcare-api-dicom-fuse/target** folder.
+There is a **healthcare-api-dicom-fuse-X.Y.Z.jar** file in the **healthcare-api-dicom-fuse/target** folder.
 
 ## License
 
