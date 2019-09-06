@@ -1,9 +1,4 @@
 steps:
-# Install DICOMFuse
-- name: 'maven:3.6.1-jdk-8'
-  args:
-  - 'mvn'
-  - 'install'
 # Run integration tests
 - name: 'google/cloud-sdk:251.0.0'
   args:

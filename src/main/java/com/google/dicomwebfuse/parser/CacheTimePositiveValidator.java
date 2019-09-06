@@ -24,9 +24,13 @@ public class CacheTimePositiveValidator implements IParameterValidator {
     String[] param = value.split(",");
     long objectsCacheTime = Long.parseLong(param[0]);
     long instanceFilesCacheTime = Long.parseLong(param[1]);
-    if (objectsCacheTime < 0 || instanceFilesCacheTime < 0) {
+    if (objectsCacheTime <= 0) {
       throw new ParameterException(
-          "Parameter " + name + " should be positive (found " + value + ")");
+          "The parameter " + name + " should be greater than zero (found " + objectsCacheTime + ")");
+    }
+    if (instanceFilesCacheTime < 0) {
+      throw new ParameterException(
+          "The parameter " + name + " should not be negative (found " + instanceFilesCacheTime + ")");
     }
   }
 }

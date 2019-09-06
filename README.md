@@ -15,7 +15,7 @@ Before running DICOMFuse, ensure that you've installed the following
 applications:
 
 *   Java SE Runtime Environment 8.
-*   [WinFps](https://github.com/billziss-gh/winfsp) for using FUSE in Windows 
+*   [WinFsp](https://github.com/billziss-gh/winfsp) for using FUSE in Windows 
     (Windows 7x64, Windows 10x64).
 *   [OSXFuse](https://osxfuse.github.io/) for using FUSE in macOS (macOS 10.14
     Mojave).
@@ -74,7 +74,8 @@ You can specify the following mount options when you start DICOMFuse:
     Opened Instance files are cached to the temporary folder in the user space on disk.
     Other objects are cached to RAM. Cached files will be deleted if you close DICOMFuse or if the cached
     files become out of date. If you delete an Instance file locally, the cache will
-    be updated. If you upload an Instance file, the cache will be updated.
+    be updated. If you upload an Instance file, the cache will be updated. To disable caching
+    of Instance files set second parameter in --cacheTime to 0 (e.g. --cacheTime 60,0).
     Default: 60,300
   --help, -h
     Print help
@@ -88,7 +89,8 @@ You can specify the following mount options when you start DICOMFuse:
 
 > Note: * are required options. \
 > The current implementation supports 15,000 results in folders. \
-> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
+> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`  
+> When caching of Instance files are disabled, reading and copying files doesn't work.
 
 ## Description
 

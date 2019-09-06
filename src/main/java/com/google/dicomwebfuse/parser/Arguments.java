@@ -53,7 +53,8 @@ public class Arguments {
           + "on disk. Other objects are cached to RAM. Cached files will be deleted if you close "
           + "DICOMFuse or if the cached files become out of date. If you delete an Instance file "
           + "locally, the cache will be updated. If you upload an Instance file, the cache will be "
-          + "updated.",
+          + "updated. To disable caching of Instance files set second parameter in --cacheTime to "
+          + "0 (e.g. --cacheTime 60,0).",
       converter = CacheTimeConverter.class,
       validateWith = CacheTimePositiveValidator.class
   )

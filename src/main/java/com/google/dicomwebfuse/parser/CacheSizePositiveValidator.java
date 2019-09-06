@@ -24,7 +24,7 @@ public class CacheSizePositiveValidator implements IParameterValidator {
     long cacheSize = Long.parseLong(value);
     if (cacheSize < 0) {
       throw new ParameterException(
-          "Parameter " + name + " should be positive (found " + value + ")");
+          "The parameter " + name + " should not be negative (found " + value + ")");
     }
   }
 }

@@ -17,6 +17,13 @@
 readonly REPO_NAME="${1}"
 readonly TAG_NAME="${2}"
 readonly TOKEN="${ACCESS_TOKEN}"
+# Install libfuse
+apt update
+apt install -y libfuse2
+# Install maven
+apt install -y maven
+# Install DICOMFuse
+mvn install
 # Get GitHub user and GitHub repo from REPO_NAME
 IFS='_' read -ra array <<< "${REPO_NAME}"
 github_user="${array[1]}"

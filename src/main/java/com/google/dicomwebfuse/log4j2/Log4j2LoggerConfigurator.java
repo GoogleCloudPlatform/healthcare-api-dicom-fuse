@@ -74,4 +74,11 @@ public class Log4j2LoggerConfigurator {
 
     Configurator.initialize(builder.build());
   }
+
+  public void configureSilentLogger() {
+    ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory
+        .newConfigurationBuilder();
+    Configurator.initialize(builder.build());
+    Configurator.setRootLevel(Level.OFF);
+  }
 }

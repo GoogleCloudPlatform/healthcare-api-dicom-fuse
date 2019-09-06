@@ -31,6 +31,10 @@ gcloud alpha healthcare dicom-stores create "${dicom_store_name}" \
 # Install libfuse
 apt update
 apt install -y libfuse2
+# Install maven
+apt install -y maven
+# Install DICOMFuse
+mvn install
 # Get JAR version from pom.xml
 jar_version="$(grep -m 1 "<version>" /workspace/pom.xml \
   | grep -Eo "[[:digit:]]+.[[:digit:]]+.[[:digit:]]+")"

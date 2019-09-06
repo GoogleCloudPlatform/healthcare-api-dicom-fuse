@@ -105,8 +105,12 @@ public class DicomFuse extends FuseStubFS {
   public int read(String path, Pointer buf, @size_t long size, @off_t long offset,
       FuseFileInfo fi) {
     try {
-      DicomPath dicomPath = dicomPathParser.parsePath(path);
-      return dicomFuseHelper.readInstance(dicomPath, buf, (int) size, offset);
+      if (parameters.getCacheTime().getInstanceFilesCacheTime() > 0) {
+        DicomPath dicomPath = dicomPathParser.parsePath(path);
+        return dicomFuseHelper.readInstance(dicomPath, buf, (int) size, offset);
+      } else {
+        return 0;
+      }
     } catch (DicomFuseException e) {
       LOGGER.error("read error!", e);
       return -ErrorCodes.EIO();
@@ -128,8 +132,12 @@ public class DicomFuse extends FuseStubFS {
   public int open(String path, FuseFileInfo fi) {
     LOGGER.debug("open " + path);
     try {
-      DicomPath dicomPath = dicomPathParser.parsePath(path);
-      dicomFuseHelper.cacheInstanceData(dicomPath);
+      if (parameters.getCacheTime().getInstanceFilesCacheTime() > 0) {
+        DicomPath dicomPath = dicomPathParser.parsePath(path);
+        dicomFuseHelper.cacheInstanceData(dicomPath);
+      } else {
+        return 0;
+      }
     } catch (DicomFuseException e) {
       LOGGER.error("open error!", e);
       return -ErrorCodes.EIO();
