@@ -57,6 +57,7 @@ import com.google.dicomwebfuse.entities.Instance;
 import com.google.dicomwebfuse.entities.Series;
 import com.google.dicomwebfuse.entities.Study;
 import com.google.dicomwebfuse.exception.DicomFuseException;
+import com.google.dicomwebfuse.exception.StowErrorFormatter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -82,6 +83,8 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
 
 public class FuseDaoImpl implements FuseDao {
 
@@ -382,9 +385,12 @@ public class FuseDaoImpl implements FuseDao {
       try (CloseableHttpResponse response = httpclient.execute(request)) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
+          HttpEntity entity = response.getEntity();
+          String responseBody = EntityUtils.toString(entity);
+          String mimeType = ContentType.get(entity).getMimeType();
           throw new DicomFuseException(
-              "Failed to upload - " + dicomPath + "!" + response.getStatusLine() + " " + uri,
-              statusCode);
+              "Failed to upload - " + dicomPath + "\n" + response.getStatusLine() +
+                  "\n" + StowErrorFormatter.formatByMimeType(responseBody, mimeType), statusCode);
         }
       }
     } catch (IOException | URISyntaxException e) {
