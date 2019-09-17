@@ -24,12 +24,12 @@ import java.util.List;
 
 public interface FuseDao {
 
-  List<DicomStore> getDicomStoresList(QueryBuilder queryBuilder) throws DicomFuseException;
-  List<Study> getStudiesList(QueryBuilder queryBuilder) throws DicomFuseException;
-  List<Series> getSeriesList(QueryBuilder queryBuilder) throws DicomFuseException;
-  List<Instance> getInstancesList(QueryBuilder queryBuilder) throws DicomFuseException;
+  List<DicomStore> getAllDicomStores(QueryBuilder queryBuilder) throws DicomFuseException;
+  List<Study> getStudies(QueryBuilder queryBuilder) throws DicomFuseException;
+  List<Series> getSeries(QueryBuilder queryBuilder) throws DicomFuseException;
+  List<Instance> getInstances(QueryBuilder queryBuilder) throws DicomFuseException;
 
-  void downloadInstanceToTempFile(QueryBuilder queryBuilder) throws DicomFuseException;
+  void downloadInstance(QueryBuilder queryBuilder) throws DicomFuseException;
   void uploadInstance(QueryBuilder queryBuilder) throws DicomFuseException;
   void deleteInstance(QueryBuilder queryBuilder) throws DicomFuseException;
 }

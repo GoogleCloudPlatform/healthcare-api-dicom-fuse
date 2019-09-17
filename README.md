@@ -15,7 +15,7 @@ Before running DICOMFuse, ensure that you've installed the following
 applications:
 
 *   Java SE Runtime Environment 8.
-*   [WinFps](https://github.com/billziss-gh/winfsp) for using FUSE in Windows 
+*   [WinFsp](https://github.com/billziss-gh/winfsp) for using FUSE in Windows 
     (Windows 7x64, Windows 10x64).
 *   [OSXFuse](https://osxfuse.github.io/) for using FUSE in macOS (macOS 10.14
     Mojave).

@@ -31,6 +31,6 @@ public class AccessChecker {
 
   public void check() throws DicomFuseException {
     QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf);
-    fuseDao.getDicomStoresList(queryBuilder);
+    fuseDao.getAllDicomStores(queryBuilder);
   }
 }

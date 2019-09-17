@@ -458,7 +458,7 @@ class DicomFuseHelper {
 
   private void updateDicomStoresInDataset() throws DicomFuseException {
     List<DicomStore> dicomStoreList =
-        FuseDaoHelper.getDicomStoresList(parameters.getFuseDAO(), parameters.getCloudConf());
+        FuseDaoHelper.getAllDicomStores(parameters.getFuseDAO(), parameters.getCloudConf());
     List<DicomStore> cachedDicomStoreList = cache.getCachedDicomStoreList();
     for (DicomStore dicomStore : cachedDicomStoreList) {
       if (dicomStoreList.contains(dicomStore)) {
@@ -479,7 +479,7 @@ class DicomFuseHelper {
 
   private void updateStudiesInDicomStore(DicomPath dicomPath, boolean forceUpdate)
       throws DicomFuseException {
-    List<Study> studyList = FuseDaoHelper.getStudiesList(parameters.getFuseDAO(),
+    List<Study> studyList = FuseDaoHelper.getStudies(parameters.getFuseDAO(),
         parameters.getCloudConf(), dicomPath);
     List<Study> cachedStudyList;
     try {
@@ -511,7 +511,7 @@ class DicomFuseHelper {
   }
 
   private void updateSeriesInStudy(DicomPath dicomPath) throws DicomFuseException {
-    List<Series> seriesList = FuseDaoHelper.getSeriesList(parameters.getFuseDAO(),
+    List<Series> seriesList = FuseDaoHelper.getSeries(parameters.getFuseDAO(),
         parameters.getCloudConf(), dicomPath);
     List<Series> cachedSeriesList;
     try {
@@ -538,7 +538,7 @@ class DicomFuseHelper {
   }
 
   private void updateInstancesInSeries(DicomPath dicomPath) throws DicomFuseException {
-    List<Instance> instanceList = FuseDaoHelper.getInstancesList(parameters.getFuseDAO(),
+    List<Instance> instanceList = FuseDaoHelper.getInstances(parameters.getFuseDAO(),
         parameters.getCloudConf(), dicomPath);
     List<Instance> cachedInstanceList;
     try {

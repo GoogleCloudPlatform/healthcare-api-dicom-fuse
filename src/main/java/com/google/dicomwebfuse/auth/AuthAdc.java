@@ -27,20 +27,26 @@ public class AuthAdc {
   private static final List<String> SCOPES = Collections.singletonList(
       "https://www.googleapis.com/auth/cloud-healthcare"
   );
+  private GoogleCredentials googleCredentials;
 
-  private GoogleCredentials credentials;
+  public AuthAdc(GoogleCredentials googleCredentials) {
+    this.googleCredentials = googleCredentials;
+  }
+
+  public AuthAdc() {
+  }
 
   public void createCredentials(Path keyPath) throws IOException {
     InputStream inputStream = new FileInputStream(keyPath.toFile());
-    credentials = GoogleCredentials.fromStream(inputStream).createScoped(SCOPES);
+    googleCredentials = GoogleCredentials.fromStream(inputStream).createScoped(SCOPES);
   }
 
   public void createCredentials() throws IOException {
-    credentials = GoogleCredentials.getApplicationDefault().createScoped(SCOPES);
+    googleCredentials = GoogleCredentials.getApplicationDefault().createScoped(SCOPES);
   }
 
   public GoogleCredentials getCredentials() throws IOException {
-    credentials.getRequestMetadata(); // Update token if it necessary.
-    return credentials;
+    googleCredentials.getRequestMetadata(); // Update token if it necessary.
+    return googleCredentials;
   }
 }
