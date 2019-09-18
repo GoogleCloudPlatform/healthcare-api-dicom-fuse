@@ -17,6 +17,7 @@ package com.google.dicomwebfuse.dao.spec;
 import com.google.dicomwebfuse.entities.CloudConf;
 import com.google.dicomwebfuse.entities.DicomPath;
 import java.nio.file.Path;
+import java.util.Objects;
 
 public class QueryBuilder {
 
@@ -27,6 +28,7 @@ public class QueryBuilder {
   private String instanceId;
   private Path instanceDataPath;
   private DicomPath dicomPath;
+  private Integer offset = 0;
 
   private QueryBuilder() {
   }
@@ -67,7 +69,12 @@ public class QueryBuilder {
     return this;
   }
 
-  CloudConf getCloudConf() {
+  public QueryBuilder setOffset(Integer offset) {
+    this.offset = offset;
+    return this;
+  }
+
+  public CloudConf getCloudConf() {
     return cloudConf;
   }
 
@@ -75,7 +82,7 @@ public class QueryBuilder {
     return dicomStoreId;
   }
 
-  public String getStudyId() {
+  String getStudyId() {
     return studyId;
   }
 
@@ -93,5 +100,35 @@ public class QueryBuilder {
 
   public DicomPath getDicomPath() {
     return dicomPath;
+  }
+
+  public Integer getOffset() {
+    return offset;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    QueryBuilder that = (QueryBuilder) o;
+    return Objects.equals(cloudConf, that.cloudConf) &&
+        Objects.equals(dicomStoreId, that.dicomStoreId) &&
+        Objects.equals(studyId, that.studyId) &&
+        Objects.equals(seriesId, that.seriesId) &&
+        Objects.equals(instanceId, that.instanceId) &&
+        Objects.equals(instanceDataPath, that.instanceDataPath) &&
+        Objects.equals(dicomPath, that.dicomPath) &&
+        Objects.equals(offset, that.offset);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects
+        .hash(cloudConf, dicomStoreId, studyId, seriesId, instanceId, instanceDataPath, dicomPath,
+            offset);
   }
 }

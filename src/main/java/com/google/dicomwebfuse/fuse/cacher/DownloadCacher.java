@@ -87,7 +87,7 @@ public class DownloadCacher {
   private Path getInstance(DicomPath dicomPath) throws DicomFuseException {
     LOGGER.info("File caching started  - " + dicomPath);
     Path instanceDataPath = CacherUtils.createTempPath();
-    FuseDaoHelper.downloadInstanceToTempFile(parameters.getFuseDAO(), parameters.getCloudConf(),
+    FuseDaoHelper.downloadInstance(parameters.getFuseDAO(), parameters.getCloudConf(),
         dicomPath, instanceDataPath);
     return instanceDataPath;
   }

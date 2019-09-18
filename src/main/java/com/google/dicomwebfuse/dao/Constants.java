@@ -39,7 +39,7 @@ public class Constants {
   static final Integer MAX_STUDIES_IN_DICOM_STORE = VALUE_PARAM_MAX_LIMIT_FOR_STUDY * 3;
   static final Integer MAX_SERIES_IN_STUDY = VALUE_PARAM_MAX_LIMIT_FOR_SERIES * 3;
   static final Integer MAX_INSTANCES_IN_SERIES = VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
-  static final Integer THREAD_COUNT = 4;
+  static final Integer THREAD_COUNT = 3;
 
   static final String BEARER = "Bearer ";
   static final String APPLICATION_JSON_CHARSET_UTF8 = "application/json; charset=utf-8";

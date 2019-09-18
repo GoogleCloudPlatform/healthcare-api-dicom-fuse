@@ -17,6 +17,8 @@ package com.google.dicomwebfuse;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.FuseDao;
 import com.google.dicomwebfuse.dao.FuseDaoImpl;
+import com.google.dicomwebfuse.dao.http.HttpClientFactory;
+import com.google.dicomwebfuse.dao.http.HttpClientFactoryImpl;
 import com.google.dicomwebfuse.exception.DicomFuseException;
 import com.google.dicomwebfuse.fuse.DicomFuse;
 import com.google.dicomwebfuse.fuse.Parameters;
@@ -51,7 +53,8 @@ class AppMountProcess {
       return;
     }
 
-    FuseDao fuseDAO = new FuseDaoImpl(authADC);
+    HttpClientFactory httpClientFactory = new HttpClientFactoryImpl();
+    FuseDao fuseDAO = new FuseDaoImpl(authADC, httpClientFactory);
     OS os = Platform.getNativePlatform().getOS();
     Parameters parameters = new Parameters(fuseDAO, arguments, os);
     DicomFuse dicomFuse = new DicomFuse(parameters);
