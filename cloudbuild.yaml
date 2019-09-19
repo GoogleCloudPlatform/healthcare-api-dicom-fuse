@@ -13,6 +13,8 @@ steps:
   - '${_PROJECT}'
   - '${_LOCATION}'
   - '${_DATASET}'
+  - '${_MAX_STUDY_STORE}'
+  - '${_LAST_STUDY}'
   timeout: 600s
 
 substitutions:
@@ -20,3 +22,5 @@ substitutions:
   _PROJECT: gcp-healthcare-oss-test
   _LOCATION: us-central1
   _DATASET: healthcare-api-dicom-fuse-test
+  _MAX_STUDY_STORE: retrieve-study-past-max-studies-limit
+  _LAST_STUDY: '11432'

@@ -26,8 +26,11 @@ public interface FuseDao {
 
   List<DicomStore> getAllDicomStores(QueryBuilder queryBuilder) throws DicomFuseException;
   List<Study> getStudies(QueryBuilder queryBuilder) throws DicomFuseException;
+  Study getSingleStudy(QueryBuilder queryBuilder) throws DicomFuseException;
   List<Series> getSeries(QueryBuilder queryBuilder) throws DicomFuseException;
+  Series getSingleSeries(QueryBuilder queryBuilder) throws DicomFuseException;
   List<Instance> getInstances(QueryBuilder queryBuilder) throws DicomFuseException;
+  Instance getSingleInstance(QueryBuilder queryBuilder) throws DicomFuseException;
 
   void downloadInstance(QueryBuilder queryBuilder) throws DicomFuseException;
   void uploadInstance(QueryBuilder queryBuilder) throws DicomFuseException;

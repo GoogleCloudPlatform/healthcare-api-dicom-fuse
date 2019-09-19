@@ -30,7 +30,6 @@ import com.google.dicomwebfuse.entities.DicomStore;
 import com.google.dicomwebfuse.entities.Instance;
 import com.google.dicomwebfuse.entities.Series;
 import com.google.dicomwebfuse.entities.Study;
-import com.google.dicomwebfuse.exception.ToManyResultsException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +38,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FuseDaoHelper {
+
+  private static final Logger LOGGER = LogManager.getLogger();
 
   public static List<DicomStore> getAllDicomStores(FuseDao fuseDao, CloudConf cloudConf)
       throws DicomFuseException {
@@ -80,11 +83,21 @@ public class FuseDaoHelper {
     }
 
     if (studyList.size() > MAX_STUDIES_IN_DICOM_STORE) {
-      throw new ToManyResultsException("Too large DICOM Store. In " + dicomPath.getDicomStoreId() +
-          " over " + MAX_STUDIES_IN_DICOM_STORE + " Studies!");
+      LOGGER.warn("DICOM Store {} has more than {} studies in it, so only showing the first {}",
+          dicomPath.getDicomStoreId(), MAX_STUDIES_IN_DICOM_STORE, MAX_STUDIES_IN_DICOM_STORE);
+      studyList = studyList.subList(0, MAX_STUDIES_IN_DICOM_STORE);
     }
 
     return studyList;
+  }
+
+  public static Study getSingleStudy(FuseDao fuseDao, CloudConf cloudConf,
+      DicomPath dicomPath) throws DicomFuseException {
+    QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
+        .setDicomStoreId(dicomPath.getDicomStoreId()).setStudyId(dicomPath.getStudyInstanceUID());
+    Study study = fuseDao.getSingleStudy(queryBuilder);
+
+    return study;
   }
 
   public static List<Series> getSeries(FuseDao fuseDao, CloudConf cloudConf,
@@ -121,11 +134,23 @@ public class FuseDaoHelper {
     }
 
     if (seriesList.size() > MAX_SERIES_IN_STUDY) {
-      throw new ToManyResultsException("Too large Study. In " + dicomPath.getStudyInstanceUID() +
-          " over " + MAX_SERIES_IN_STUDY + " Series!");
+      LOGGER.warn("DICOM Study {} has more than {} series in it, so only showing the first {}",
+          dicomPath.getStudyInstanceUID(), MAX_SERIES_IN_STUDY, MAX_SERIES_IN_STUDY);
+      seriesList = seriesList.subList(0, MAX_SERIES_IN_STUDY);
     }
 
     return seriesList;
+  }
+
+
+  public static Series getSingleSeries(FuseDao fuseDao, CloudConf cloudConf,
+      DicomPath dicomPath) throws DicomFuseException {
+    QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
+        .setDicomStoreId(dicomPath.getDicomStoreId()).setStudyId(dicomPath.getStudyInstanceUID())
+        .setSeriesId(dicomPath.getSeriesInstanceUID());
+    Series study = fuseDao.getSingleSeries(queryBuilder);
+
+    return study;
   }
 
   public static List<Instance> getInstances(FuseDao fuseDao, CloudConf cloudConf,
@@ -146,10 +171,22 @@ public class FuseDaoHelper {
       instancesList.addAll(resultInstancesList);
     }
     if (instancesList.size() > MAX_INSTANCES_IN_SERIES) {
-      throw new ToManyResultsException("Too large Series. In " + queryBuilder.getSeriesId() +
-          " over " + MAX_INSTANCES_IN_SERIES + " Instances!");
+      LOGGER.warn("DICOM Series {} has more than {} instances in it, so only showing the first {}",
+          dicomPath.getStudyInstanceUID(), MAX_INSTANCES_IN_SERIES, MAX_INSTANCES_IN_SERIES);
+      instancesList = instancesList.subList(0, MAX_INSTANCES_IN_SERIES);
     }
     return instancesList;
+  }
+
+  public static Instance getSingleInstance(FuseDao fuseDao, CloudConf cloudConf,
+      DicomPath dicomPath) throws DicomFuseException {
+    QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
+        .setDicomStoreId(dicomPath.getDicomStoreId())
+        .setStudyId(dicomPath.getStudyInstanceUID())
+        .setSeriesId(dicomPath.getSeriesInstanceUID())
+        .setInstanceId(dicomPath.getSopInstanceUID());
+    Instance instance = fuseDao.getSingleInstance(queryBuilder);
+    return instance;
   }
 
   public static void downloadInstance(FuseDao fuseDao, CloudConf cloudConf,

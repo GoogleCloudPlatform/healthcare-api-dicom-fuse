@@ -31,6 +31,9 @@ public class Constants {
   static final String PARAM_INCLUDE_FIELD = "includefield";
   static final String PARAM_LIMIT = "limit";
   static final String PARAM_OFFSET = "offset";
+  static final String PARAM_STUDY_ID = "StudyInstanceUID";
+  static final String PARAM_SERIES_ID = "SeriesInstanceUID";
+  static final String PARAM_INSTANCE_ID = "SOPInstanceUID";
   static final String VALUE_PARAM_STUDY_INSTANCE_UID = "0020000D";
   static final String VALUE_PARAM_SERIES_INSTANCE_UID = "0020000E";
   static final Integer VALUE_PARAM_MAX_LIMIT_FOR_STUDY = 5000;

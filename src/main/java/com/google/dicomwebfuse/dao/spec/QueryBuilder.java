@@ -82,7 +82,7 @@ public class QueryBuilder {
     return dicomStoreId;
   }
 
-  String getStudyId() {
+  public String getStudyId() {
     return studyId;
   }
 
@@ -90,7 +90,7 @@ public class QueryBuilder {
     return seriesId;
   }
 
-  String getInstanceId() {
+  public String getInstanceId() {
     return instanceId;
   }
 
