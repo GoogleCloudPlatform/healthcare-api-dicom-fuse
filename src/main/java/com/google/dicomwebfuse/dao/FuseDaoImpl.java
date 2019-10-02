@@ -21,9 +21,12 @@ import static com.google.dicomwebfuse.dao.Constants.BEARER;
 import static com.google.dicomwebfuse.dao.Constants.HEALTHCARE_HOST;
 import static com.google.dicomwebfuse.dao.Constants.MULTIPART_RELATED_TYPE_APPLICATION_DICOM_BOUNDARY;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_INCLUDE_FIELD;
+import static com.google.dicomwebfuse.dao.Constants.PARAM_INSTANCE_ID;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_LIMIT;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_OFFSET;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_PAGE_TOKEN;
+import static com.google.dicomwebfuse.dao.Constants.PARAM_SERIES_ID;
+import static com.google.dicomwebfuse.dao.Constants.PARAM_STUDY_ID;
 import static com.google.dicomwebfuse.dao.Constants.SCHEME;
 import static com.google.dicomwebfuse.dao.Constants.VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
 import static com.google.dicomwebfuse.dao.Constants.VALUE_PARAM_MAX_LIMIT_FOR_SERIES;
@@ -130,6 +133,23 @@ public class FuseDaoImpl implements FuseDao {
   }
 
   @Override
+  public Study getSingleStudy(QueryBuilder queryBuilder) throws DicomFuseException {
+    StudiesPathBuilder studiesPathBuilder = new StudiesPathBuilder(queryBuilder);
+    String path = studiesPathBuilder.toPath();
+    URIBuilder uriBuilder = new URIBuilder()
+        .setScheme(SCHEME)
+        .setHost(HEALTHCARE_HOST)
+        .addParameter(PARAM_STUDY_ID, queryBuilder.getStudyId())
+        .setPath(path);
+    List<Study> studies = createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {
+    });
+    if (studies.size() < 1) {
+      throw new DicomFuseException("Study not found");
+    }
+    return studies.get(0);
+  }
+
+  @Override
   public List<Series> getSeries(QueryBuilder queryBuilder) throws DicomFuseException {
     SeriesPathBuilder seriesPathBuilder = new SeriesPathBuilder(queryBuilder);
     String path = seriesPathBuilder.toPath();
@@ -141,6 +161,25 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
     return createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+  }
+
+
+  @Override
+  public Series getSingleSeries(QueryBuilder queryBuilder) throws DicomFuseException {
+    SeriesPathBuilder studiesPathBuilder = new SeriesPathBuilder(queryBuilder);
+    String path = studiesPathBuilder.toPath();
+    URIBuilder uriBuilder = new URIBuilder()
+        .setScheme(SCHEME)
+        .setHost(HEALTHCARE_HOST)
+        .addParameter(PARAM_INCLUDE_FIELD, VALUE_PARAM_STUDY_INSTANCE_UID)
+        .addParameter(PARAM_SERIES_ID, queryBuilder.getSeriesId())
+        .setPath(path);
+    List<Series> series = createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {
+    });
+    if (series.size() < 1) {
+      throw new DicomFuseException("Series not found");
+    }
+    return series.get(0);
   }
 
   @Override
@@ -156,6 +195,25 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
     return createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+  }
+
+  @Override
+  public Instance getSingleInstance(QueryBuilder queryBuilder) throws DicomFuseException {
+    InstancesPathBuilder instancesPathBuilder = new InstancesPathBuilder(queryBuilder);
+    String path = instancesPathBuilder.toPath();
+    URIBuilder uriBuilder = new URIBuilder()
+        .setScheme(SCHEME)
+        .setHost(HEALTHCARE_HOST)
+        .addParameter(PARAM_INCLUDE_FIELD, VALUE_PARAM_STUDY_INSTANCE_UID)
+        .addParameter(PARAM_INCLUDE_FIELD, VALUE_PARAM_SERIES_INSTANCE_UID)
+        .addParameter(PARAM_INSTANCE_ID, queryBuilder.getInstanceId())
+        .setPath(path);
+    List<Instance> instances = createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {
+    });
+    if (instances.size() < 1) {
+      throw new DicomFuseException("Instance not found");
+    }
+    return instances.get(0);
   }
 
   @Override
