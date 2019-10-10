@@ -25,6 +25,7 @@ import java.util.List;
 public interface FuseDao {
 
   List<DicomStore> getAllDicomStores(QueryBuilder queryBuilder) throws DicomFuseException;
+  DicomStore getSingleDicomStore(QueryBuilder queryBuilder) throws DicomFuseException;
   List<Study> getStudies(QueryBuilder queryBuilder) throws DicomFuseException;
   Study getSingleStudy(QueryBuilder queryBuilder) throws DicomFuseException;
   List<Series> getSeries(QueryBuilder queryBuilder) throws DicomFuseException;

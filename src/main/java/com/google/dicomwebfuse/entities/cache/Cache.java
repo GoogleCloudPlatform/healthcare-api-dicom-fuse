@@ -37,7 +37,7 @@ public class Cache {
     CachedDicomStore cachedDicomStore = cachedDataset.getCachedDicomStores()
         .get(dicomPath.getDicomStoreId());
     if (cachedDicomStore == null) {
-      throw new DicomFuseException("null cached studies! " + dicomPath);
+      throw new DicomFuseException("null cached DICOM Store - " + dicomPath);
     }
     return cachedDicomStore;
   }
@@ -47,7 +47,7 @@ public class Cache {
     CachedStudy cachedStudy = cachedDicomStore.getCachedStudies()
         .get(dicomPath.getStudyInstanceUID());
     if (cachedStudy == null) {
-      throw new DicomFuseException("null cached series! " + dicomPath);
+      throw new DicomFuseException("null cached Study - " + dicomPath);
     }
     return cachedStudy;
   }
@@ -56,7 +56,7 @@ public class Cache {
       throws DicomFuseException {
     CachedSeries cachedSeries = cachedStudy.getCachedSeries().get(dicomPath.getSeriesInstanceUID());
     if (cachedSeries == null) {
-      throw new DicomFuseException("null cached instances! " + dicomPath);
+      throw new DicomFuseException("null cached Series - " + dicomPath);
     }
     return cachedSeries;
   }
@@ -66,7 +66,7 @@ public class Cache {
     InstanceContent instanceContent = cachedSeries.getCachedInstances()
         .get(dicomPath.getSopInstanceUID());
     if (instanceContent == null) {
-      throw new DicomFuseException("null instance content! " + dicomPath);
+      throw new DicomFuseException("null instance content - " + dicomPath);
     }
     return instanceContent;
   }
@@ -76,7 +76,7 @@ public class Cache {
     InstanceContent instanceContent = cachedDicomStore.getCachedTempInstances()
         .get(dicomPath.getFileName());
     if (instanceContent == null) {
-      throw new DicomFuseException("null instance content! " + dicomPath);
+      throw new DicomFuseException("null instance content - " + dicomPath);
     }
     return instanceContent;
   }
@@ -158,7 +158,7 @@ public class Cache {
       case TEMP_FILE_IN_SERIES:
         return getTempInstanceContent(cachedDicomStore, dicomPath);
       default:
-        throw new DicomFuseException("Invalid dicom path level! " + dicomPath);
+        throw new DicomFuseException("Invalid dicom path level - " + dicomPath);
     }
   }
 
@@ -184,7 +184,7 @@ public class Cache {
         instanceContent = getTempInstanceContent(cachedDicomStore, dicomPath);
         return instanceContent.getCommand();
       default:
-        throw new DicomFuseException("Invalid dicom path level! " + dicomPath);
+        throw new DicomFuseException("Invalid dicom path level - " + dicomPath);
     }
   }
 
@@ -205,30 +205,73 @@ public class Cache {
         instanceContent.setCommand(command);
         break;
       default:
-        throw new DicomFuseException("Invalid dicom path level! " + dicomPath);
+        throw new DicomFuseException("Invalid dicom path level - " + dicomPath);
     }
   }
 
+  /**
+   * Checks that Dataset outdated or not.
+   *
+   * @return true if Dataset outdated, false if not
+   */
   public boolean isDatasetOutdated() {
-    return cachedDataset.getDatasetCacheTime().isBefore(Instant.now());
+    // Instant.now() - Returns a value in microseconds in Java 9 and later, but returns
+    // milliseconds in Java 8. That's why, to avoid incorrect isBefore(instantNow) results in
+    // cases where less than a millisecond has passed equals(instantNow) were included.
+    Instant instantNow = Instant.now();
+    return cachedDataset.getDatasetCacheTime().isBefore(instantNow) ||
+        cachedDataset.getDatasetCacheTime().equals(instantNow);
   }
 
+  /**
+   * Checks that DICOM Store outdated or not.
+   *
+   * @param dicomPath current DICOM path to the DICOM Store
+   * @return true if DICOM Store outdated, false if not
+   */
   public boolean isDicomStoreOutdated(DicomPath dicomPath) throws DicomFuseException {
     CachedDicomStore cachedDicomStore = getCachedDicomStore(dicomPath);
-    return cachedDicomStore.getDicomStoreCacheTime().isBefore(Instant.now());
+    // Instant.now() - Returns a value in microseconds in Java 9 and later, but returns
+    // milliseconds in Java 8. That's why, to avoid incorrect isBefore(instantNow) results in
+    // cases where less than a millisecond has passed equals(instantNow) were included.
+    Instant instantNow = Instant.now();
+    return cachedDicomStore.getDicomStoreCacheTime().isBefore(instantNow) ||
+        cachedDicomStore.getDicomStoreCacheTime().equals(instantNow);
   }
 
+  /**
+   * Checks that Study outdated or not.
+   *
+   * @param dicomPath current DICOM path to the Study
+   * @return true if Study outdated, false if not
+   */
   public boolean isStudyOutdated(DicomPath dicomPath) throws DicomFuseException {
     CachedDicomStore cachedDicomStore = getCachedDicomStore(dicomPath);
     CachedStudy cachedStudy = getCachedStudy(cachedDicomStore, dicomPath);
-    return cachedStudy.getStudyCacheTime().isBefore(Instant.now());
+    // Instant.now() - Returns a value in microseconds in Java 9 and later, but returns
+    // milliseconds in Java 8. That's why, to avoid incorrect isBefore(instantNow) results in
+    // cases where less than a millisecond has passed equals(instantNow) were included.
+    Instant instantNow = Instant.now();
+    return cachedStudy.getStudyCacheTime().isBefore(instantNow) ||
+        cachedStudy.getStudyCacheTime().equals(instantNow);
   }
 
+  /**
+   * Checks that Series outdated or not.
+   *
+   * @param dicomPath current DICOM path to the Series
+   * @return true if Series outdated, false if not
+   */
   public boolean isSeriesOutdated(DicomPath dicomPath) throws DicomFuseException {
     CachedDicomStore cachedDicomStore = getCachedDicomStore(dicomPath);
     CachedStudy cachedStudy = getCachedStudy(cachedDicomStore, dicomPath);
     CachedSeries cachedSeries = getCachedSeries(cachedStudy, dicomPath);
-    return cachedSeries.getSeriesCacheTime().isBefore(Instant.now());
+    // Instant.now() - Returns a value in microseconds in Java 9 and later, but returns
+    // milliseconds in Java 8. That's why, to avoid incorrect isBefore(instantNow) results in
+    // cases where less than a millisecond has passed equals(instantNow) were included.
+    Instant instantNow = Instant.now();
+    return cachedSeries.getSeriesCacheTime().isBefore(Instant.now()) ||
+        cachedStudy.getStudyCacheTime().equals(instantNow);
   }
 
   public boolean isDicomStoreNotExist(DicomPath dicomPath) {
@@ -259,7 +302,7 @@ public class Cache {
         return !cachedDicomStore.getCachedTempInstances()
             .containsKey(dicomPath.getFileName());
       default:
-        throw new DicomFuseException("Invalid dicom path level! " + dicomPath);
+        throw new DicomFuseException("Invalid dicom path level - " + dicomPath);
     }
   }
 

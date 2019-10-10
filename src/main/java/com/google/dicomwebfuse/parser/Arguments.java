@@ -26,60 +26,52 @@ public class Arguments {
 
   @Parameter(
       names = {"--datasetAddr", "-a"},
-      description = "Web address to the Dataset. " +
-          "Example: https://healthcare.googleapis.com/v1beta1/projects/PROJECT/locations/" +
-          "LOCATION/datasets/DATASET",
+      descriptionKey = "option.datasetAddr",
       required = true,
+      order = 0,
       converter = CloudConfigurationConverter.class
   )
   public CloudConf cloudConf;
 
   @Parameter(
       names = {"--mountPath", "-p"},
-      description = "Path to mount the Dataset. Example on Linux: /home/user/fuse-mount-folder. "
-          + "Example on macOS: /Users/user/fuse-mount-folder "
-          + "Example on Windows: J:\\",
+      descriptionKey = "option.mountPath",
       required = true,
+      order = 1,
       converter = PathConverter.class
   )
   public Path mountPath;
 
   @Parameter(
       names = {"--cacheTime", "-t"},
-      description = "Each value in this option is measured in seconds. To optimize DICOMFuse, the "
-          + "following resources are cached: DICOM store folders, Study folders, Series folders, "
-          + "list of Instances (first parameter in option), and opened Instances files (second "
-          + "parameter). Opened Instance files are cached to the temporary folder in the user space "
-          + "on disk. Other objects are cached to RAM. Cached files will be deleted if you close "
-          + "DICOMFuse or if the cached files become out of date. If you delete an Instance file "
-          + "locally, the cache will be updated. If you upload an Instance file, the cache will be "
-          + "updated.",
+      descriptionKey = "option.cacheTime",
       converter = CacheTimeConverter.class,
+      order = 2,
       validateWith = CacheTimePositiveValidator.class
   )
   public CacheTime cacheTime = new CacheTime(60, 300);
 
   @Parameter(
       names = {"--cacheSize", "-s"},
-      description = "Maximum cache size in megabytes for cached instances. "
-          + "The maximum file size that can be downloaded/uploaded is cacheSize / 4",
+      descriptionKey = "option.cacheSize",
       converter = LongConverter.class,
+      order = 3,
       validateWith = CacheSizePositiveValidator.class
   )
   public long cacheSize = 10000;
 
   @Parameter(
       names = {"--enableDeletion", "-d"},
-      description = "Some programs can delete files and deletion can also be done manually. "
-          + "Sometimes accidental deletions can occur. If you don't want to delete files, you can "
-          + "set --enableDeletion=false",
+      descriptionKey = "option.enableDeletion",
+      order = 4,
       converter = BooleanConverter.class
   )
   public boolean enableDeletion = true;
 
   @Parameter(
       names = {"--keyFile", "-k"},
-      description = "Path to the account service key",
+      descriptionKey = "option.keyFile",
+      order = 5,
       converter = PathConverter.class
   )
   public Path keyPath;
@@ -87,7 +79,8 @@ public class Arguments {
   @Parameter(
       names = {"--help", "-h"},
       help = true,
-      description = "Print help"
+      descriptionKey = "option.help",
+      order = 6
   )
   public boolean help = false;
 }

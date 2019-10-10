@@ -470,8 +470,8 @@ class DicomFuseHelper {
     }
     for (DicomStore dicomStore : dicomStoreList) {
       String dicomStoreId = dicomStore.getDicomStoreId();
-      CachedDicomStore newCahedStudies = new CachedDicomStore(dicomStore);
-      cache.getCachedDicomStores().put(dicomStoreId, newCahedStudies);
+      CachedDicomStore newCachedDicomStore = new CachedDicomStore(dicomStore);
+      cache.getCachedDicomStores().put(dicomStoreId, newCachedDicomStore);
     }
     Instant newInstant = Instant.now().plusSeconds(parameters.getCacheTime().getObjectsCacheTime());
     cache.setDatasetCacheTime(newInstant);

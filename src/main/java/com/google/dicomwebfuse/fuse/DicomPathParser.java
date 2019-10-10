@@ -20,9 +20,11 @@ import com.google.dicomwebfuse.fuse.cacher.DicomPathCacher;
 import com.google.dicomwebfuse.entities.DicomPath;
 import com.google.dicomwebfuse.entities.DicomPathLevel;
 import com.google.dicomwebfuse.exception.DicomFuseException;
+import java.util.regex.Pattern;
 
 class DicomPathParser {
 
+  private static final Pattern PATTERN = Pattern.compile(".*[a-zA-Z]+.*");
   private final DicomPathCacher dicomPathCacher;
 
   DicomPathParser(DicomPathCacher dicomPathCacher) {
@@ -62,6 +64,11 @@ class DicomPathParser {
         if (tempDicomPath != null) {
           dicomPath = tempDicomPath;
         } else {
+          // UIDs should contain only numbers
+          // See: http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_9.html
+          if (PATTERN.matcher(pathREST[1]).matches()) {
+            throw new DicomFuseException("Invalid Study UID - " + pathREST[1]);
+          }
           dicomPath = new DicomPath.Builder(DicomPathLevel.STUDY)
               .dicomStoreId(pathREST[0])
               .studyInstanceUID(pathREST[1])
@@ -69,6 +76,9 @@ class DicomPathParser {
         }
         break;
       case 3:
+        if (PATTERN.matcher(pathREST[2]).matches()) {
+          throw new DicomFuseException("Invalid Series UID - " + pathREST[2]);
+        }
         dicomPath = new DicomPath.Builder(DicomPathLevel.SERIES)
             .dicomStoreId(pathREST[0])
             .studyInstanceUID(pathREST[1])
@@ -92,11 +102,11 @@ class DicomPathParser {
           dicomPath = tempDicomPath;
         } else {
           int fileNameLength = fileName.length();
-          int sopInstanceUIDLenth = fileNameLength;
+          int sopInstanceUIDLength = fileNameLength;
           if (fileName.contains(DCM_EXTENSION)) {
-            sopInstanceUIDLenth = fileNameLength - DCM_EXTENSION.length();
+            sopInstanceUIDLength = fileNameLength - DCM_EXTENSION.length();
           }
-          String sopInstanceUID = fileName.substring(0, sopInstanceUIDLenth);
+          String sopInstanceUID = fileName.substring(0, sopInstanceUIDLength);
           dicomPath = new DicomPath.Builder(DicomPathLevel.INSTANCE)
               .dicomStoreId(pathREST[0])
               .studyInstanceUID(pathREST[1])
@@ -106,7 +116,7 @@ class DicomPathParser {
         }
         break;
       default:
-        throw new DicomFuseException("Error parsing path!");
+        throw new DicomFuseException("Error parsing path");
     }
     return dicomPath;
   }

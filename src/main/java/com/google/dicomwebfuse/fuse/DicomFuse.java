@@ -65,7 +65,7 @@ public class DicomFuse extends FuseStubFS {
       dicomFuseHelper.checkExistingObject(dicomPath);
       dicomFuseHelper.setAttr(dicomPath, this, fileStat);
     } catch (DicomFuseException e) {
-      LOGGER.debug("getattr error!", e);
+      LOGGER.debug("getattr error", e);
       return -ErrorCodes.ENOENT();
     }
     return 0;
@@ -82,7 +82,7 @@ public class DicomFuse extends FuseStubFS {
       dicomFuseHelper.checkExistingObject(dicomPath);
       dicomFuseHelper.fillFolder(dicomPath, buf, filler);
     } catch (DicomFuseException e) {
-      LOGGER.error("readdir error!", e);
+      LOGGER.error("readdir error", e);
       return -ErrorCodes.ENOENT();
     }
     return 0;
@@ -95,7 +95,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       dicomFuseHelper.updateDir(dicomPath);
     } catch (DicomFuseException e) {
-      LOGGER.error("readdir error!", e);
+      LOGGER.error("opendir error", e);
       return -ErrorCodes.ENOENT();
     }
     return 0;
@@ -108,7 +108,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       return dicomFuseHelper.readInstance(dicomPath, buf, (int) size, offset);
     } catch (DicomFuseException e) {
-      LOGGER.error("read error!", e);
+      LOGGER.error("read error", e);
       return -ErrorCodes.EIO();
     }
   }
@@ -119,7 +119,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       return dicomFuseHelper.writeInstance(dicomPath, buf, (int) size, offset);
     } catch (DicomFuseException e) {
-      LOGGER.error("write error!", e);
+      LOGGER.error("write error", e);
       return -ErrorCodes.EIO();
     }
   }
@@ -131,7 +131,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       dicomFuseHelper.cacheInstanceData(dicomPath);
     } catch (DicomFuseException e) {
-      LOGGER.error("open error!", e);
+      LOGGER.error("open error", e);
       return -ErrorCodes.EIO();
     }
     return 0;
@@ -150,7 +150,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       dicomFuseHelper.flushInstance(dicomPath);
     } catch (DicomFuseException e) {
-      LOGGER.error("flush error!", e);
+      LOGGER.error("flush error", e);
       if (os == LINUX) {
         // "Remote I/O error" in Linux but in macOS "Unknown error: 121"
         return -ErrorCodes.EREMOTEIO();
@@ -175,7 +175,7 @@ public class DicomFuse extends FuseStubFS {
       DicomPath dicomPath = dicomPathParser.parsePath(path, Command.CREATE);
       dicomFuseHelper.createTemporaryInstance(dicomPath);
     } catch (DicomFuseException e) {
-      LOGGER.error("create error!", e);
+      LOGGER.error("create error", e);
       return -ErrorCodes.EIO();
     }
     return 0;
@@ -200,7 +200,7 @@ public class DicomFuse extends FuseStubFS {
         }
         dicomFuseHelper.unlinkInstance(dicomPath);
       } catch (DicomFuseException e) {
-        LOGGER.error("unlink error!", e);
+        LOGGER.error("unlink error", e);
         return -ErrorCodes.EIO();
       }
     }

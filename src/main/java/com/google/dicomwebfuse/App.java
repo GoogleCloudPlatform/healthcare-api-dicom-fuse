@@ -15,19 +15,17 @@
 package com.google.dicomwebfuse;
 
 import com.beust.jcommander.JCommander;
-import com.google.dicomwebfuse.log4j2.Log4j2LoggerConfigurator;
 import com.google.dicomwebfuse.parser.Arguments;
+import java.util.ResourceBundle;
 
 public class App {
 
   public static void main(String[] args) {
 
-    Log4j2LoggerConfigurator log4j2LoggerConfigurator = new Log4j2LoggerConfigurator();
-    log4j2LoggerConfigurator.configureLogger();
-
     Arguments arguments = new Arguments();
     JCommander jCommander = JCommander.newBuilder()
         .addObject(arguments)
+        .resourceBundle(ResourceBundle.getBundle("cli-messages"))
         .programName("DICOMFuse")
         .build();
     jCommander.parse(args);
