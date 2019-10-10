@@ -44,6 +44,7 @@ import com.google.api.client.http.HttpStatusCodes;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
+import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.DicomStoresPathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancePathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancesPathBuilder;
@@ -77,7 +78,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 
@@ -120,6 +120,17 @@ public class FuseDaoImpl implements FuseDao {
   }
 
   @Override
+  public DicomStore getSingleDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
+    SingleDicomStorePathBuilder singleDicomStorePathBuilder =
+        new SingleDicomStorePathBuilder(queryBuilder);
+    URIBuilder uriBuilder = new URIBuilder()
+        .setScheme(SCHEME)
+        .setHost(HEALTHCARE_HOST)
+        .setPath(singleDicomStorePathBuilder.toPath());
+    return createRequestForObjectList(uriBuilder, new TypeReference<DicomStore>() {});
+  }
+
+  @Override
   public List<Study> getStudies(QueryBuilder queryBuilder) throws DicomFuseException {
     StudiesPathBuilder studiesPathBuilder = new StudiesPathBuilder(queryBuilder);
     String path = studiesPathBuilder.toPath();
@@ -141,9 +152,9 @@ public class FuseDaoImpl implements FuseDao {
         .setHost(HEALTHCARE_HOST)
         .addParameter(PARAM_STUDY_ID, queryBuilder.getStudyId())
         .setPath(path);
-    List<Study> studies = createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {
-    });
-    if (studies.size() < 1) {
+    List<Study> studies =
+        createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {});
+    if (studies.size() == 0) {
       throw new DicomFuseException("Study not found");
     }
     return studies.get(0);
@@ -174,9 +185,9 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_INCLUDE_FIELD, VALUE_PARAM_STUDY_INSTANCE_UID)
         .addParameter(PARAM_SERIES_ID, queryBuilder.getSeriesId())
         .setPath(path);
-    List<Series> series = createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {
-    });
-    if (series.size() < 1) {
+    List<Series> series =
+        createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+    if (series.size() == 0) {
       throw new DicomFuseException("Series not found");
     }
     return series.get(0);
@@ -208,9 +219,9 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_INCLUDE_FIELD, VALUE_PARAM_SERIES_INSTANCE_UID)
         .addParameter(PARAM_INSTANCE_ID, queryBuilder.getInstanceId())
         .setPath(path);
-    List<Instance> instances = createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {
-    });
-    if (instances.size() < 1) {
+    List<Instance> instances =
+        createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+    if (instances.size() == 0) {
       throw new DicomFuseException("Instance not found");
     }
     return instances.get(0);
@@ -271,7 +282,7 @@ public class FuseDaoImpl implements FuseDao {
 
   private void createRequestToDownloadInstance(URIBuilder uriBuilder, Path instanceDataPath)
       throws DicomFuseException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = uriBuilder.build();
       HttpGet request = new HttpGet(uri);
       request.addHeader(ACCEPT, APPLICATION_DICOM_TRANSFER_SYNTAX);
@@ -295,7 +306,7 @@ public class FuseDaoImpl implements FuseDao {
 
   private void createRequestToUploadInstance(URIBuilder uriBuilder, Path instanceDataPath,
       DicomPath dicomPath) throws DicomFuseException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = uriBuilder.build();
       HttpPost request = new HttpPost(uri);
 
@@ -329,7 +340,7 @@ public class FuseDaoImpl implements FuseDao {
   }
 
   private void createRequestToDeleteInstance(URIBuilder uriBuilder) throws DicomFuseException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = uriBuilder.build();
       HttpDelete request = new HttpDelete(uri);
       request.addHeader(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF8);
@@ -347,7 +358,7 @@ public class FuseDaoImpl implements FuseDao {
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
     int statusCode = response.getStatusLine().getStatusCode();
     if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
-      throw new DicomFuseException("Failed HTTP! " + response.getStatusLine() + " " + uri,
+      throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
           statusCode);
     }
   }

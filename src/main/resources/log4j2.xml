@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{DEFAULT} %-5level - %msg%n%throwable"/>
+    </Console>
+    <RollingFile name="DebugRolling" filepattern="logs/debug-%i-%d{dd-MM-yyyy}.log"
+      filename="logs/debug.log">
+      <PatternLayout pattern="%d{DEFAULT} %-5level %logger{36} - %msg%n%throwable"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="15 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+    <RollingFile name="InfoRolling" filepattern="logs/info-%i-%d{dd-MM-yyyy}.log"
+      filename="logs/info.log">
+      <PatternLayout pattern="%d{DEFAULT} %-5level %logger{36} - %msg%n%throwable"/>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="15 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="com.google.dicomwebfuse" level="debug">
+      <AppenderRef ref="DebugRolling"/>
+      <AppenderRef ref="InfoRolling" level="info"/>
+    </Logger>
+    <Root>
+      <AppenderRef ref="Console" level="info"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

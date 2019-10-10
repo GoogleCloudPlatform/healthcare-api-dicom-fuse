@@ -51,6 +51,13 @@ public class FuseDaoHelper {
     return fuseDao.getAllDicomStores(queryBuilder);
   }
 
+  public static DicomStore getSingleDicomStore(FuseDao fuseDao, CloudConf cloudConf,
+      DicomPath dicomPath) throws DicomFuseException {
+    QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
+        .setDicomStoreId(dicomPath.getDicomStoreId());
+    return fuseDao.getSingleDicomStore(queryBuilder);
+  }
+
   public static List<Study> getStudies(FuseDao fuseDao, CloudConf cloudConf,
       DicomPath dicomPath) throws DicomFuseException {
     QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
@@ -91,13 +98,12 @@ public class FuseDaoHelper {
     return studyList;
   }
 
-  public static Study getSingleStudy(FuseDao fuseDao, CloudConf cloudConf,
-      DicomPath dicomPath) throws DicomFuseException {
+  public static Study getSingleStudy(FuseDao fuseDao, CloudConf cloudConf, DicomPath dicomPath)
+      throws DicomFuseException {
     QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
-        .setDicomStoreId(dicomPath.getDicomStoreId()).setStudyId(dicomPath.getStudyInstanceUID());
-    Study study = fuseDao.getSingleStudy(queryBuilder);
-
-    return study;
+        .setDicomStoreId(dicomPath.getDicomStoreId())
+        .setStudyId(dicomPath.getStudyInstanceUID());
+    return fuseDao.getSingleStudy(queryBuilder);
   }
 
   public static List<Series> getSeries(FuseDao fuseDao, CloudConf cloudConf,
@@ -142,15 +148,13 @@ public class FuseDaoHelper {
     return seriesList;
   }
 
-
-  public static Series getSingleSeries(FuseDao fuseDao, CloudConf cloudConf,
-      DicomPath dicomPath) throws DicomFuseException {
+  public static Series getSingleSeries(FuseDao fuseDao, CloudConf cloudConf, DicomPath dicomPath)
+      throws DicomFuseException {
     QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
-        .setDicomStoreId(dicomPath.getDicomStoreId()).setStudyId(dicomPath.getStudyInstanceUID())
+        .setDicomStoreId(dicomPath.getDicomStoreId())
+        .setStudyId(dicomPath.getStudyInstanceUID())
         .setSeriesId(dicomPath.getSeriesInstanceUID());
-    Series study = fuseDao.getSingleSeries(queryBuilder);
-
-    return study;
+    return fuseDao.getSingleSeries(queryBuilder);
   }
 
   public static List<Instance> getInstances(FuseDao fuseDao, CloudConf cloudConf,
@@ -185,8 +189,7 @@ public class FuseDaoHelper {
         .setStudyId(dicomPath.getStudyInstanceUID())
         .setSeriesId(dicomPath.getSeriesInstanceUID())
         .setInstanceId(dicomPath.getSopInstanceUID());
-    Instance instance = fuseDao.getSingleInstance(queryBuilder);
-    return instance;
+    return fuseDao.getSingleInstance(queryBuilder);
   }
 
   public static void downloadInstance(FuseDao fuseDao, CloudConf cloudConf,

@@ -27,7 +27,9 @@ class DicomPathParserTest {
 
   private static final String dicomStoreId = "DicomStore";
   private static final String studyInstanceUID = "111";
+  private static final String invalidStudyInstanceUID = "test1study1test1";
   private static final String seriesInstanceUID = "222";
+  private static final String invalidSeriesInstanceUID = "1test1series";
   private static final String sopInstanceUID = "333";
   private static final String newDcmFile = "file1" + FuseConstants.DCM_EXTENSION;
 
@@ -79,6 +81,14 @@ class DicomPathParserTest {
   }
 
   @Test
+  void testParsePathShouldReturnExceptionIfStudyInstanceUIDContainsLetters() {
+    // given
+    String invalidStudyPath = "/" + dicomStoreId + "/" + invalidStudyInstanceUID;
+    // then
+    assertThrows(DicomFuseException.class, () -> dicomPathParser.parsePath(invalidStudyPath));
+  }
+
+  @Test
   void testParsePathShouldParseWhenSeriesPathProvided() throws DicomFuseException {
     // given
     String seriesPath = "/" + dicomStoreId + "/" + studyInstanceUID + "/" + seriesInstanceUID;
@@ -91,6 +101,15 @@ class DicomPathParserTest {
         .seriesInstanceUID(seriesInstanceUID)
         .build();
     assertEquals(actualDicomPath, expectedDicomPath);
+  }
+
+  @Test
+  void testParsePathShouldReturnExceptionIfSeriesInstanceUIDContainsLetters() {
+    // given
+    String invalidSeriesPath =
+        "/" + dicomStoreId + "/" + studyInstanceUID + "/" + invalidSeriesInstanceUID;
+    // then
+    assertThrows(DicomFuseException.class, () -> dicomPathParser.parsePath(invalidSeriesPath));
   }
 
   @Test
