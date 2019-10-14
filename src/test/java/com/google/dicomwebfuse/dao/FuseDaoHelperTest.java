@@ -14,18 +14,16 @@
 
 package com.google.dicomwebfuse.dao;
 
-import static com.google.dicomwebfuse.TestUtils.prepareHttpClient;
-import static com.google.dicomwebfuse.dao.Constants.MAX_INSTANCES_IN_SERIES;
-import static com.google.dicomwebfuse.dao.Constants.MAX_SERIES_IN_STUDY;
-import static com.google.dicomwebfuse.dao.Constants.MAX_STUDIES_IN_DICOM_STORE;
+import static com.google.dicomwebfuse.EntityType.INSTANCE;
+import static com.google.dicomwebfuse.EntityType.SERIES;
+import static com.google.dicomwebfuse.EntityType.STUDY;
 import static com.google.dicomwebfuse.dao.Constants.VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
 import static com.google.dicomwebfuse.dao.Constants.VALUE_PARAM_MAX_LIMIT_FOR_SERIES;
 import static com.google.dicomwebfuse.dao.Constants.VALUE_PARAM_MAX_LIMIT_FOR_STUDY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.api.client.http.HttpStatusCodes;
-import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.dicomwebfuse.TestUtils;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
 import com.google.dicomwebfuse.entities.CloudConf;
@@ -37,15 +35,14 @@ import com.google.dicomwebfuse.entities.Study;
 import com.google.dicomwebfuse.exception.DicomFuseException;
 import java.io.IOException;
 import java.util.List;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class FuseDaoHelperTest {
 
   private static final String TEST = "test";
-  private static final String STUDY_CONTENT = "{\"0020000D\":{\"vr\":\"UI\",\"Value\":[\"1\"]}}";
-  private static final String SERIES_CONTENT = "{\"0020000E\":{\"vr\":\"UI\",\"Value\":[\"1\"]}}";
-  private static final String INSTANCE_CONTENT = "{\"00080018\":{\"vr\":\"UI\",\"Value\":[\"1\"]}}";
   private static AuthAdc authAdc;
   private static CloudConf cloudConf;
   private static DicomPath dicomPath;
@@ -60,9 +57,7 @@ class FuseDaoHelperTest {
         .sopInstanceUID(TEST)
         .fileName(TEST)
         .build();
-    AccessToken accessToken = new AccessToken(TEST, null);
-    GoogleCredentials googleCredentials = GoogleCredentials.create(accessToken);
-    authAdc = new AuthAdc(googleCredentials);
+    authAdc = TestUtils.prepareAuthAdc(TEST);
   }
 
   @Test
@@ -72,8 +67,9 @@ class FuseDaoHelperTest {
     int expectedStudiesCount = 4000;
     int expectedStatusCode = HttpStatusCodes.STATUS_CODE_OK;
 
-    HttpClientFactory httpClientFactory = prepareHttpClient(expectedStudiesCount,
-        MAX_STUDIES_IN_DICOM_STORE, VALUE_PARAM_MAX_LIMIT_FOR_STUDY, STUDY_CONTENT,
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, expectedStudiesCount, STUDY,
         expectedStatusCode);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
     // when
@@ -89,8 +85,9 @@ class FuseDaoHelperTest {
     int expectedStudiesCount = VALUE_PARAM_MAX_LIMIT_FOR_STUDY;
     int expectedStatusCode = HttpStatusCodes.STATUS_CODE_OK;
 
-    HttpClientFactory httpClientFactory = prepareHttpClient(expectedStudiesCount,
-        MAX_STUDIES_IN_DICOM_STORE, VALUE_PARAM_MAX_LIMIT_FOR_STUDY, STUDY_CONTENT,
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, expectedStudiesCount, STUDY,
         expectedStatusCode);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
     // when
@@ -107,8 +104,10 @@ class FuseDaoHelperTest {
     int expectedSeriesCount = 4000;
     int expectedStatusCode = HttpStatusCodes.STATUS_CODE_OK;
 
-    HttpClientFactory httpClientFactory = prepareHttpClient(expectedSeriesCount,
-        MAX_SERIES_IN_STUDY, VALUE_PARAM_MAX_LIMIT_FOR_SERIES, SERIES_CONTENT, expectedStatusCode);
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, expectedSeriesCount, SERIES,
+        expectedStatusCode);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
     // when
     List<Series> actualSeriesList = FuseDaoHelper.getSeries(fuseDao, cloudConf, dicomPath);
@@ -123,8 +122,10 @@ class FuseDaoHelperTest {
     int expectedSeriesCount = VALUE_PARAM_MAX_LIMIT_FOR_SERIES;
     int expectedStatusCode = HttpStatusCodes.STATUS_CODE_OK;
 
-    HttpClientFactory httpClientFactory = prepareHttpClient(expectedSeriesCount,
-        MAX_SERIES_IN_STUDY, VALUE_PARAM_MAX_LIMIT_FOR_SERIES, SERIES_CONTENT, expectedStatusCode);
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, expectedSeriesCount, SERIES,
+        expectedStatusCode);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
     // when
     List<Series> actualSeriesList = FuseDaoHelper.getSeries(fuseDao, cloudConf, dicomPath);
@@ -140,8 +141,9 @@ class FuseDaoHelperTest {
     int expectedInstancesCount = VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
     int expectedStatusCode = HttpStatusCodes.STATUS_CODE_OK;
 
-    HttpClientFactory httpClientFactory = prepareHttpClient(expectedInstancesCount,
-        MAX_INSTANCES_IN_SERIES, VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES, INSTANCE_CONTENT,
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, expectedInstancesCount, INSTANCE,
         expectedStatusCode);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
     // when
@@ -149,5 +151,4 @@ class FuseDaoHelperTest {
     // then
     assertEquals(expectedInstancesCount, actualInstancesList.size());
   }
-
 }

@@ -14,410 +14,200 @@
 
 package com.google.dicomwebfuse.fuse;
 
-import static com.google.dicomwebfuse.TestUtils.prepareSimpleHttpResponse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.argThat;
+import static com.google.dicomwebfuse.EntityType.DICOM_STORE;
+import static com.google.dicomwebfuse.EntityType.INSTANCE;
+import static com.google.dicomwebfuse.EntityType.SERIES;
+import static com.google.dicomwebfuse.EntityType.STUDY;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.api.client.http.HttpStatusCodes;
+import com.google.dicomwebfuse.TestUtils;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.FuseDao;
 import com.google.dicomwebfuse.dao.FuseDaoImpl;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
 import com.google.dicomwebfuse.entities.CloudConf;
 import com.google.dicomwebfuse.entities.DicomPath;
+import com.google.dicomwebfuse.entities.cache.Cache;
 import com.google.dicomwebfuse.exception.DicomFuseException;
 import com.google.dicomwebfuse.fuse.cacher.DicomPathCacher;
 import com.google.dicomwebfuse.parser.Arguments;
 import java.io.IOException;
-import java.util.Objects;
 import jnr.ffi.Platform;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DicomFuseHelperTest {
-
-  private static final String TEST = "test";
-  private static AuthAdc authAdc;
-  private static CloudConf cloudConf;
-  private static DicomPath dicomPath;
-
-  @BeforeAll
-  static void setup() {
-    cloudConf = new CloudConf(TEST, TEST, TEST, TEST);
-    AccessToken accessToken = new AccessToken(TEST, null);
-    GoogleCredentials googleCredentials = GoogleCredentials.create(accessToken);
-    authAdc = new AuthAdc(googleCredentials);
-  }
+class DicomFuseHelperTest {
 
   @Test
   void testShouldSuccessfullyOpenUnlistedStudy() throws IOException, DicomFuseException {
     CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
 
-    addMockStoreResponse(closeableHttpClient);
-    addMockStudiesResponse(closeableHttpClient);
-    addMockWrongStudyResponse(closeableHttpClient);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, DICOM_STORE,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/", null);
+    String studiesPath =
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/";
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 0, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK, studiesPath, "limit=5000&offset=0");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 5000, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK, studiesPath, "limit=5000&offset=5000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 10000, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK, studiesPath, "limit=5000&offset=10000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK, studiesPath, "limit=5000&offset=15000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK, studiesPath, "StudyInstanceUID=15001");
 
-    HttpClientFactory httpClientFactory = Mockito.mock(HttpClientFactory.class);
-    Mockito.when(httpClientFactory.createHttpClient()).thenReturn(closeableHttpClient);
+    Cache cache = new Cache();
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory, cache);
 
     DicomPathCacher dicomPathCacher = new DicomPathCacher();
     DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
-    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory);
 
-    dicomPath = dicomPathParser.parsePath("/test");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123");
-
-    assertThrows(DicomFuseException.class,
-        () -> dicomFuseHelper.checkExistingObject(dicomPath));
-
-    addMockStudyResponse(closeableHttpClient);
-    dicomFuseHelper.checkExistingObject(dicomPath);
+    // caching all DICOM Stores in the current Dataset
+    DicomPath datasetPath = dicomPathParser.parsePath("/");
+    dicomFuseHelper.updateDir(datasetPath);
+    // caching all Studies in the current DICOM Store
+    DicomPath dicomStorePath = dicomPathParser.parsePath("/test1");
+    dicomFuseHelper.updateDir(dicomStorePath);
+    // checking that unlisted Study is not in the cache
+    DicomPath unlistedStudyPath = dicomPathParser.parsePath("/test1/15001");
+    assertTrue(cache.isStudyNotExist(unlistedStudyPath));
+    // caching unlisted Study
+    dicomFuseHelper.checkExistingObject(unlistedStudyPath);
+    // checking that Study is in the cache
+    assertFalse(cache.isStudyNotExist(unlistedStudyPath));
   }
 
   @Test
   void testShouldSuccessfullyOpenUnlistedSeries() throws IOException, DicomFuseException {
     CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
 
-    addMockStoreResponse(closeableHttpClient);
-    addMockStudiesResponse(closeableHttpClient);
-    addMockStudyResponse(closeableHttpClient);
-    addMockSeriesResponse(closeableHttpClient);
-    addMockSingleSeriesResponse(closeableHttpClient);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, DICOM_STORE,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/", null);
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/",
+        "limit=5000&offset=0");
+    String seriesPath =
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/1/series/";
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 0, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK, seriesPath,
+        "includefield=0020000D&limit=5000&offset=0");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 5000, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK, seriesPath,
+        "includefield=0020000D&limit=5000&offset=5000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 10000, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK, seriesPath,
+        "includefield=0020000D&limit=5000&offset=10000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK, seriesPath,
+        "includefield=0020000D&limit=5000&offset=15000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK, seriesPath,
+        "includefield=0020000D&SeriesInstanceUID=15001");
 
-    HttpClientFactory httpClientFactory = Mockito.mock(HttpClientFactory.class);
-    Mockito.when(httpClientFactory.createHttpClient()).thenReturn(closeableHttpClient);
+    Cache cache = new Cache();
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory, cache);
 
     DicomPathCacher dicomPathCacher = new DicomPathCacher();
     DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
-    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory);
 
-    dicomPath = dicomPathParser.parsePath("/test");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123/1234");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-
-
+    // caching all DICOM Stores in the current Dataset
+    DicomPath datasetPath = dicomPathParser.parsePath("/");
+    dicomFuseHelper.updateDir(datasetPath);
+    // caching all Studies in the current DICOM Store
+    DicomPath dicomStorePath = dicomPathParser.parsePath("/test1");
+    dicomFuseHelper.updateDir(dicomStorePath);
+    // caching all Series in the current Study
+    DicomPath studyPath = dicomPathParser.parsePath("/test1/1");
+    dicomFuseHelper.updateDir(studyPath);
+    // checking that unlisted Series is not in the cache
+    DicomPath unlistedSeriesPath = dicomPathParser.parsePath("/test1/1/15001");
+    assertTrue(cache.isSeriesNotExist(unlistedSeriesPath));
+    // caching unlisted Series
+    dicomFuseHelper.checkExistingObject(unlistedSeriesPath);
+    // checking that Series is in the cache
+    assertFalse(cache.isSeriesNotExist(unlistedSeriesPath));
   }
 
   @Test
   void testShouldSuccessfullyOpenUnlistedInstance() throws IOException, DicomFuseException {
     CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
 
-    addMockStoreResponse(closeableHttpClient);
-    addMockStudiesResponse(closeableHttpClient);
-    addMockStudyResponse(closeableHttpClient);
-    addMockSeriesResponse(closeableHttpClient);
-    addMockSingleSeriesResponse(closeableHttpClient);
-    addMockInstancesResponse(closeableHttpClient);
-    addMockInstanceResponse(closeableHttpClient);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, DICOM_STORE,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/", null);
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, STUDY,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/",
+        "limit=5000&offset=0");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 0, SERIES,
+        HttpStatusCodes.STATUS_CODE_OK,
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/1/series/",
+        "includefield=0020000D&limit=5000&offset=0");
+    String instancesPath =
+        "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/1/series/1/instances/";
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 0, INSTANCE,
+        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
+        "includefield=0020000D&includefield=0020000E&limit=5000&offset=0");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 5000, INSTANCE,
+        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
+        "includefield=0020000D&includefield=0020000E&limit=5000&offset=5000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 10000, INSTANCE,
+        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
+        "includefield=0020000D&includefield=0020000E&limit=5000&offset=10000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, INSTANCE,
+        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
+        "includefield=0020000D&includefield=0020000E&limit=5000&offset=15000");
+    TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, INSTANCE,
+        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
+        "includefield=0020000D&includefield=0020000E&SOPInstanceUID=15001");
 
-    HttpClientFactory httpClientFactory = Mockito.mock(HttpClientFactory.class);
-    Mockito.when(httpClientFactory.createHttpClient()).thenReturn(closeableHttpClient);
+    Cache cache = new Cache();
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory, cache);
 
     DicomPathCacher dicomPathCacher = new DicomPathCacher();
     DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
-    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory);
 
-    dicomPath = dicomPathParser.parsePath("/test");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123/1234");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-    dicomFuseHelper.updateDir(dicomPath);
-    dicomPath = dicomPathParser.parsePath("/test/123/1234/12345");
-    dicomFuseHelper.checkExistingObject(dicomPath);
-
-
+    // caching all DICOM Stores in the current Dataset
+    DicomPath datasetPath = dicomPathParser.parsePath("/");
+    dicomFuseHelper.updateDir(datasetPath);
+    // caching all Studies in the current DICOM Store
+    DicomPath dicomStorePath = dicomPathParser.parsePath("/test1");
+    dicomFuseHelper.updateDir(dicomStorePath);
+    // caching all Series in the current Study
+    DicomPath studyPath = dicomPathParser.parsePath("/test1/1");
+    dicomFuseHelper.updateDir(studyPath);
+    // caching all Instances in the current Series
+    DicomPath seriesPath = dicomPathParser.parsePath("/test1/1/1");
+    dicomFuseHelper.updateDir(seriesPath);
+    // checking that unlisted Instance is not in the cache
+    DicomPath unlistedInstancePath = dicomPathParser.parsePath("/test1/1/1/15001");
+    assertTrue(cache.isInstanceNotExist(unlistedInstancePath));
+    // caching unlisted Instance
+    dicomFuseHelper.checkExistingObject(unlistedInstancePath);
+    // checking that Instance is in the cache
+    assertFalse(cache.isSeriesNotExist(unlistedInstancePath));
   }
 
-  DicomFuseHelper prepareDicomFuseHelper(HttpClientFactory httpClientFactory) {
+  private DicomFuseHelper prepareDicomFuseHelper(HttpClientFactory httpClientFactory, Cache cache) {
+    String TEST = "test";
+    AuthAdc authAdc = TestUtils.prepareAuthAdc(TEST);
+    CloudConf cloudConf = new CloudConf(TEST, TEST, TEST, TEST);
     FuseDao fuseDao = new FuseDaoImpl(authAdc, httpClientFactory);
-    Arguments arguments = new com.google.dicomwebfuse.parser.Arguments();
+    Arguments arguments = new Arguments();
     arguments.cloudConf = cloudConf;
     Parameters parameters = new Parameters(fuseDao, arguments,
         Platform.getNativePlatform().getOS());
     DicomPathCacher dicomPathCacher = new DicomPathCacher();
-    DicomFuseHelper dicomFuseHelper = new DicomFuseHelper(parameters, dicomPathCacher);
-    return dicomFuseHelper;
+    return new DicomFuseHelper(parameters, dicomPathCacher, cache);
   }
-
-  void addMockResponse(CloseableHttpClient httpClient, CloseableHttpResponse httpResponse,
-      String path, String query)
-      throws IOException {
-    Mockito.doReturn(httpResponse).when(httpClient).execute(argThat(
-        (HttpGet get) -> get.getURI().getPath().equals(path) && Objects
-            .equals(get.getURI().getQuery(), query)));
-  }
-
-  void addMockStoreResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse storeResponse = prepareSimpleHttpResponse(200, "{\n"
-        + "  \"dicomStores\": [\n"
-        + "    {\n"
-        + "      \"name\": \"projects/project/locations/location/datasets/dataset/dicomStores/test\"\n"
-        + "    }\n"
-        + "  ]\n"
-        + "}");
-    addMockResponse(httpClient, storeResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/", null);
-  }
-
-  void addMockStudiesResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studiesResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1.2.276.0.7230010.3.1.2.2148188943.12.1559318675.533393\"\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]\n");
-    addMockResponse(httpClient, studiesResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/",
-        "limit=5000&offset=0");
-  }
-
-  void addMockStudyResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studyResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"123\"\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]\n");
-    addMockResponse(httpClient, studyResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/",
-        "StudyInstanceUID=123");
-  }
-
-  void addMockWrongStudyResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studyResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"321\"\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]\n");
-    addMockResponse(httpClient, studyResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/",
-        "StudyInstanceUID=123");
-  }
-
-  void addMockSeriesResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studiesResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"00080060\": {\n"
-        + "            \"vr\": \"CS\",\n"
-        + "            \"Value\": [\n"
-        + "                \"SM\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0008103E\": {\n"
-        + "            \"vr\": \"LO\",\n"
-        + "            \"Value\": [\n"
-        + "                \"tumor\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"123\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000E\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1.2.276.0.7230010.3.1.3.2148188943.12.1559318675.533394\"\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]");
-    addMockResponse(httpClient, studiesResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/123/series/",
-        "includefield=0020000D&limit=5000&offset=0");
-  }
-
-  void addMockSingleSeriesResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studiesResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"00080060\": {\n"
-        + "            \"vr\": \"CS\",\n"
-        + "            \"Value\": [\n"
-        + "                \"SM\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0008103E\": {\n"
-        + "            \"vr\": \"LO\",\n"
-        + "            \"Value\": [\n"
-        + "                \"tumor\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"123\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000E\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1234\"\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]");
-    addMockResponse(httpClient, studiesResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/123/series/",
-        "includefield=0020000D&SeriesInstanceUID=1234");
-  }
-
-  void addMockInstancesResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studiesResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"00080016\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1.2.840.10008.5.1.4.1.1.77.1.6\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00080018\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1.2.276.0.7230010.3.1.4.2148188943.12.1559318703.533395\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"123\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000E\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1234\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00200013\": {\n"
-        + "            \"vr\": \"IS\",\n"
-        + "            \"Value\": [\n"
-        + "                1\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280008\": {\n"
-        + "            \"vr\": \"IS\",\n"
-        + "            \"Value\": [\n"
-        + "                2048\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280010\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                500\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280011\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                500\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280100\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                8\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]");
-    addMockResponse(httpClient, studiesResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/123/series/1234/instances/",
-        "includefield=0020000D&includefield=0020000E&limit=15000&offset=0");
-  }
-
-  void addMockInstanceResponse(CloseableHttpClient httpClient) throws IOException {
-    CloseableHttpResponse studiesResponse = prepareSimpleHttpResponse(200, "[\n"
-        + "    {\n"
-        + "        \"00080016\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1.2.840.10008.5.1.4.1.1.77.1.6\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00080018\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"12345\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000D\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"123\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"0020000E\": {\n"
-        + "            \"vr\": \"UI\",\n"
-        + "            \"Value\": [\n"
-        + "                \"1234\"\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00200013\": {\n"
-        + "            \"vr\": \"IS\",\n"
-        + "            \"Value\": [\n"
-        + "                1\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280008\": {\n"
-        + "            \"vr\": \"IS\",\n"
-        + "            \"Value\": [\n"
-        + "                2048\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280010\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                500\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280011\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                500\n"
-        + "            ]\n"
-        + "        },\n"
-        + "        \"00280100\": {\n"
-        + "            \"vr\": \"US\",\n"
-        + "            \"Value\": [\n"
-        + "                8\n"
-        + "            ]\n"
-        + "        }\n"
-        + "    }\n"
-        + "]");
-    addMockResponse(httpClient, studiesResponse,
-        "/test/projects/test/locations/test/datasets/test/dicomStores/test/dicomWeb/studies/123/series/1234/instances/",
-        "includefield=0020000D&includefield=0020000E&SOPInstanceUID=12345");
-  }
-
-
 }

@@ -42,7 +42,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,11 +64,11 @@ class DicomFuseHelper {
   private final Instant defaultInstant;
 
 
-  DicomFuseHelper(Parameters parameters, DicomPathCacher dicomPathCacher) {
+  DicomFuseHelper(Parameters parameters, DicomPathCacher dicomPathCacher, Cache cache) {
     this.parameters = parameters;
     downloadCacher = new DownloadCacher(parameters);
     uploadCacher = new UploadCacher();
-    cache = new Cache();
+    this.cache = cache;
     this.dicomPathCacher = dicomPathCacher;
     os = parameters.getOs();
     defaultInstant = Instant.EPOCH.plusSeconds(60 * 60 * 24).plusNanos(1000);
@@ -78,50 +77,35 @@ class DicomFuseHelper {
   void checkExistingObject(DicomPath dicomPath) throws DicomFuseException {
     switch (dicomPath.getDicomPathLevel()) {
       case DATASET:
-        if (cache.isDatasetOutdated()) {
-          updateDicomStoresInDataset();
-        }
         break;
       case DICOM_STORE:
-        if (cache.isDatasetOutdated() || cache.isDicomStoreNotExist(dicomPath)) {
-          updateDicomStoresInDataset();
-          if (cache.isDicomStoreNotExist(dicomPath)) {
-            throw new DicomFuseException("Invalid path to the dicom store! " + dicomPath);
-          }
+        if (cache.isDicomStoreNotExist(dicomPath)) {
+          cacheDicomStoreIfPresent(dicomPath);
         }
         break;
       case STUDY:
-        if (cache.isDicomStoreOutdated(dicomPath) || cache.isStudyNotExist(dicomPath)) {
-          updateSingleStudyInDicomStore(dicomPath, false);
-          if (cache.isStudyNotExist(dicomPath)) {
-            throw new DicomFuseException("Invalid path to the study! " + dicomPath);
-          }
+        if (cache.isStudyNotExist(dicomPath)) {
+          cacheStudyIfPresent(dicomPath);
         }
         break;
       case SERIES:
-        if (cache.isStudyOutdated(dicomPath) || cache.isSeriesNotExist(dicomPath)) {
-          updateSingleSeriesInStudy(dicomPath);
-          if (cache.isSeriesNotExist(dicomPath)) {
-            throw new DicomFuseException("Invalid path to the series! " + dicomPath);
-          }
+        if (cache.isSeriesNotExist(dicomPath)) {
+          cacheSeriesIfPresent(dicomPath);
         }
         break;
       case INSTANCE:
-        if (cache.isSeriesOutdated(dicomPath) || cache.isInstanceNotExist(dicomPath)) {
-          updateSingleInstanceInSeries(dicomPath);
-          if (cache.isInstanceNotExist(dicomPath)) {
-            throw new DicomFuseException("Invalid path to the instance! " + dicomPath);
-          }
+        if (cache.isInstanceNotExist(dicomPath)) {
+          cacheInstanceIfPresent(dicomPath);
         }
         break;
       case TEMP_FILE_IN_DICOM_STORE:
       case TEMP_FILE_IN_SERIES:
         if (cache.isInstanceNotExist(dicomPath)) {
-          throw new DicomFuseException("Invalid path to the temp instance! " + dicomPath);
+          throw new DicomFuseException("Invalid path to the temp instance - " + dicomPath);
         }
         break;
       default:
-        throw new DicomFuseException("Invalid path! " + dicomPath);
+        throw new DicomFuseException("Invalid path - " + dicomPath);
     }
   }
 
@@ -130,26 +114,26 @@ class DicomFuseHelper {
       case LINUX:
         for (String partPath : LINUX_FORBIDDEN_PATHS) {
           if (path.contains(partPath)) {
-            throw new DicomFuseException("Invalid path! " + path);
+            throw new DicomFuseException("Invalid path - " + path);
           }
         }
         break;
       case WINDOWS:
         for (String partPath : WINDOWS_FORBIDDEN_PATHS) {
           if (path.contains(partPath)) {
-            throw new DicomFuseException("Invalid path! " + path);
+            throw new DicomFuseException("Invalid path - " + path);
           }
         }
         break;
       case DARWIN:
         for (String partPath : MAC_OS_FORBIDDEN_PATHS) {
           if (path.contains(partPath)) {
-            throw new DicomFuseException("Invalid path! " + path);
+            throw new DicomFuseException("Invalid path - " + path);
           }
         }
         break;
       default:
-        throw new DicomFuseException("Invalid OS! " + path);
+        throw new DicomFuseException("Invalid OS - " + path);
     }
   }
 
@@ -162,7 +146,7 @@ class DicomFuseHelper {
         break;
       case DICOM_STORE:
         if (cache.isDicomStoreOutdated(dicomPath)) {
-          updateStudiesInDicomStore(dicomPath, false);
+          updateStudiesInDicomStore(dicomPath);
         }
         break;
       case STUDY:
@@ -176,7 +160,7 @@ class DicomFuseHelper {
         }
         break;
       default:
-        throw new DicomFuseException("Invalid path! " + dicomPath);
+        throw new DicomFuseException("Invalid path - " + dicomPath);
     }
   }
 
@@ -201,7 +185,7 @@ class DicomFuseHelper {
         setStat(dicomFuse, fileStat, FileStat.S_IFREG | 0666, dicomPath);
         break;
       default:
-        throw new DicomFuseException("Error level!");
+        throw new DicomFuseException("Error level");
     }
   }
 
@@ -275,7 +259,7 @@ class DicomFuseHelper {
         fillSeriesFolder(dicomPath, buf, filler);
         break;
       default:
-        throw new DicomFuseException("Error level!");
+        throw new DicomFuseException("Error level");
     }
   }
 
@@ -318,7 +302,7 @@ class DicomFuseHelper {
       throws DicomFuseException {
     Path instancePath = downloadCacher.getPathIfPresent(dicomPath);
     if (instancePath == null) {
-      throw new DicomFuseException("Error reading file! Try open the file again. " + dicomPath);
+      throw new DicomFuseException("Error reading file. Try open the file again. " + dicomPath);
     }
     int length = 0;
     try (RandomAccessFile raf = new RandomAccessFile(instancePath.toFile(), "r")) {
@@ -330,7 +314,7 @@ class DicomFuseHelper {
         length = 0;
       }
     } catch (IOException e) {
-      LOGGER.error("Error reading file!", e);
+      LOGGER.error("Error reading file", e);
     }
     return length;
   }
@@ -359,7 +343,7 @@ class DicomFuseHelper {
       buf.get(0, buffer, 0, size);
       raf.write(buffer);
     } catch (IOException e) {
-      LOGGER.error("Random access file write error!", e);
+      LOGGER.error("Random access file write error", e);
       return 0;
     }
     instanceOffset.set(offset + size); // for macOS
@@ -411,13 +395,13 @@ class DicomFuseHelper {
               uploadCacher.removePath(dicomPath);
               dicomPathCacher.removeDicomPath(dicomPath.getFileName());
             } catch (DicomFuseException | InterruptedException e) {
-              LOGGER.error("clear resources error!", e);
+              LOGGER.error("Clear resources error", e);
             }
           };
           Thread thread = new Thread(clearResources);
           thread.start();
         }
-        updateStudiesInDicomStore(dicomPath, true);
+        invalidateDicomStoreCache(dicomPath);
         break;
       case INSTANCE:
         try {
@@ -432,9 +416,7 @@ class DicomFuseHelper {
               dicomPath, instanceDataPath);
         } finally {
           uploadCacher.removePath(dicomPath);
-          updateStudiesInDicomStore(dicomPath, false);
-          updateSeriesInStudy(dicomPath);
-          updateInstancesInSeries(dicomPath);
+          invalidateDicomStoreCache(dicomPath);
         }
         break;
       default:
@@ -451,9 +433,7 @@ class DicomFuseHelper {
     FuseDaoHelper.deleteInstance(parameters.getFuseDAO(), parameters.getCloudConf(), dicomPath);
     LOGGER.info("Instance was deleted - " + dicomPath);
     downloadCacher.removePath(dicomPath);
-    updateStudiesInDicomStore(dicomPath, false);
-    updateSeriesInStudy(dicomPath);
-    updateInstancesInSeries(dicomPath);
+    invalidateDicomStoreCache(dicomPath);
   }
 
   private void updateDicomStoresInDataset() throws DicomFuseException {
@@ -477,8 +457,7 @@ class DicomFuseHelper {
     cache.setDatasetCacheTime(newInstant);
   }
 
-  private void updateStudiesInDicomStore(DicomPath dicomPath, boolean forceUpdate)
-      throws DicomFuseException {
+  private void updateStudiesInDicomStore(DicomPath dicomPath) throws DicomFuseException {
     List<Study> studyList = FuseDaoHelper.getStudies(parameters.getFuseDAO(),
         parameters.getCloudConf(), dicomPath);
     List<Study> cachedStudyList;
@@ -488,35 +467,19 @@ class DicomFuseHelper {
       LOGGER.debug("Study null in " + dicomPath.getDicomStoreId() + " dicom store");
       return;
     }
-    List<Study> existingStudiesInCache = new ArrayList<>();
     for (Study study : cachedStudyList) {
-      String studyInstanceUID = study.getStudyInstanceUID().getValue1();
       if (studyList.contains(study)) {
         studyList.remove(study);
-        existingStudiesInCache.add(study);
       } else {
+        String studyInstanceUID = study.getStudyInstanceUID().getValue1();
         cache.getCachedStudies(dicomPath).remove(studyInstanceUID);
       }
-    }
-    if (forceUpdate) {
-      forceUpdateStudyProcess(dicomPath, existingStudiesInCache);
     }
     for (Study study : studyList) {
       String studyInstanceUID = study.getStudyInstanceUID().getValue1();
       CachedStudy newCachedStudy = new CachedStudy(study);
       cache.getCachedStudies(dicomPath).put(studyInstanceUID, newCachedStudy);
     }
-    Instant newInstant = Instant.now().plusSeconds(parameters.getCacheTime().getObjectsCacheTime());
-    cache.setDicomStoreCacheTime(dicomPath, newInstant);
-  }
-
-  private void updateSingleStudyInDicomStore(DicomPath dicomPath, boolean forceUpdate)
-      throws DicomFuseException {
-    Study study = FuseDaoHelper.getSingleStudy(parameters.getFuseDAO(),
-        parameters.getCloudConf(), dicomPath);
-    String studyInstanceUID = study.getStudyInstanceUID().getValue1();
-    CachedStudy newCachedStudy = new CachedStudy(study);
-    cache.getCachedStudies(dicomPath).put(studyInstanceUID, newCachedStudy);
     Instant newInstant = Instant.now().plusSeconds(parameters.getCacheTime().getObjectsCacheTime());
     cache.setDicomStoreCacheTime(dicomPath, newInstant);
   }
@@ -548,27 +511,6 @@ class DicomFuseHelper {
     cache.setStudyCacheTime(dicomPath, newInstant);
   }
 
-  private void updateSingleSeriesInStudy(DicomPath dicomPath) throws DicomFuseException {
-    Series series = FuseDaoHelper.getSingleSeries(parameters.getFuseDAO(),
-        parameters.getCloudConf(), dicomPath);
-    String seriesInstanceUID = series.getSeriesInstanceUID().getValue1();
-    CachedSeries newCachedSeries = new CachedSeries(series);
-    cache.getCachedSeries(dicomPath).put(seriesInstanceUID, newCachedSeries);
-    Instant newInstant = Instant.now().plusSeconds(parameters.getCacheTime().getObjectsCacheTime());
-    cache.setStudyCacheTime(dicomPath, newInstant);
-  }
-
-  private void updateSingleInstanceInSeries(DicomPath dicomPath) throws DicomFuseException {
-    Instance instance = FuseDaoHelper.getSingleInstance(parameters.getFuseDAO(),
-        parameters.getCloudConf(), dicomPath);
-
-    String sopInstanceUID = instance.getSopInstanceUID().getValue1();
-    InstanceContent newInstanceContent = new InstanceContent(instance);
-    cache.getCachedInstances(dicomPath).put(sopInstanceUID, newInstanceContent);
-    Instant newInstant = Instant.now().plusSeconds(parameters.getCacheTime().getObjectsCacheTime());
-    cache.setSeriesCacheTime(dicomPath, newInstant);
-  }
-
   private void updateInstancesInSeries(DicomPath dicomPath) throws DicomFuseException {
     List<Instance> instanceList = FuseDaoHelper.getInstances(parameters.getFuseDAO(),
         parameters.getCloudConf(), dicomPath);
@@ -596,30 +538,57 @@ class DicomFuseHelper {
     cache.setSeriesCacheTime(dicomPath, newInstant);
   }
 
-  private void forceUpdateStudyProcess(DicomPath dicomPath, List<Study> existingStudiesInCache)
-      throws DicomFuseException {
+  private void cacheDicomStoreIfPresent(DicomPath dicomPath) throws DicomFuseException {
+    DicomStore dicomStore = FuseDaoHelper.getSingleDicomStore(parameters.getFuseDAO(),
+        parameters.getCloudConf(), dicomPath);
+    String dicomStoreId = dicomStore.getDicomStoreId();
+    CachedDicomStore newCachedDicomStore = new CachedDicomStore(dicomStore);
+    cache.getCachedDicomStores().put(dicomStoreId, newCachedDicomStore);
+  }
+
+  private void cacheStudyIfPresent(DicomPath dicomPath) throws DicomFuseException {
+    Study study = FuseDaoHelper.getSingleStudy(parameters.getFuseDAO(), parameters.getCloudConf(),
+        dicomPath);
+    String studyInstanceUID = study.getStudyInstanceUID().getValue1();
+    CachedStudy newCachedStudy = new CachedStudy(study);
+    cache.getCachedStudies(dicomPath).put(studyInstanceUID, newCachedStudy);
+  }
+
+  private void cacheSeriesIfPresent(DicomPath dicomPath) throws DicomFuseException {
+    Series series = FuseDaoHelper.getSingleSeries(parameters.getFuseDAO(),
+        parameters.getCloudConf(), dicomPath);
+    String seriesInstanceUID = series.getSeriesInstanceUID().getValue1();
+    CachedSeries newCachedSeries = new CachedSeries(series);
+    cache.getCachedSeries(dicomPath).put(seriesInstanceUID, newCachedSeries);
+  }
+
+  private void cacheInstanceIfPresent(DicomPath dicomPath) throws DicomFuseException {
+    Instance instance = FuseDaoHelper.getSingleInstance(parameters.getFuseDAO(),
+        parameters.getCloudConf(), dicomPath);
+    String sopInstanceUID = instance.getSopInstanceUID().getValue1();
+    InstanceContent newInstanceContent = new InstanceContent(instance);
+    cache.getCachedInstances(dicomPath).put(sopInstanceUID, newInstanceContent);
+  }
+
+  private void invalidateDicomStoreCache(DicomPath dicomPath) throws DicomFuseException {
+    CachedDicomStore cachedDicomStore = cache.getCachedDicomStore(dicomPath);
+    cachedDicomStore.setDicomStoreCacheTime(Instant.now());
+    List<Study> existingStudiesInCache = cache.getCachedStudyList(dicomPath);
     for (Study study : existingStudiesInCache) {
       String studyInstanceUID = study.getStudyInstanceUID().getValue1();
       DicomPath studyDicomPath = new DicomPath.Builder(STUDY)
           .dicomStoreId(dicomPath.getDicomStoreId())
           .studyInstanceUID(studyInstanceUID)
           .build();
-      List<Series> cachedSeriesList = null;
-      try {
-        cachedSeriesList = cache.getCachedSeriesList(studyDicomPath);
-      } catch (DicomFuseException e) {
-        // if cachedSeriesList is null, continue
-      }
-      if (cachedSeriesList != null) {
-        for (Series series : cachedSeriesList) {
-          String seriesInstanceUID = series.getSeriesInstanceUID().getValue1();
-          DicomPath seriesDicomPath = new DicomPath.Builder(SERIES)
-              .dicomStoreId(dicomPath.getDicomStoreId())
-              .studyInstanceUID(studyInstanceUID)
-              .seriesInstanceUID(seriesInstanceUID)
-              .build();
-          cache.setSeriesCacheTime(seriesDicomPath, Instant.now());
-        }
+      List<Series> cachedSeriesList = cache.getCachedSeriesList(studyDicomPath);
+      for (Series series : cachedSeriesList) {
+        String seriesInstanceUID = series.getSeriesInstanceUID().getValue1();
+        DicomPath seriesDicomPath = new DicomPath.Builder(SERIES)
+            .dicomStoreId(dicomPath.getDicomStoreId())
+            .studyInstanceUID(studyInstanceUID)
+            .seriesInstanceUID(seriesInstanceUID)
+            .build();
+        cache.setSeriesCacheTime(seriesDicomPath, Instant.now());
       }
       cache.setStudyCacheTime(studyDicomPath, Instant.now());
     }

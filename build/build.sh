@@ -85,18 +85,17 @@ check_exit_code "${rm_result}" \
   "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed!"
 
 max_study_path="/workspace/${mount_folder}/${MAX_STUDY_STORE}/"
-studies_in_store=$(ls $max_study_path| wc -l)
+studies_in_store=$(ls "${max_study_path}" | wc -l)
 
 if [[ "${studies_in_store}" != 15000 ]]; then
-  echo "store don't have enough studies for test"
+  echo "DICOM Store don't have enough studies for test"
   exit 1
 fi
-if [[ "$(ls ${max_study_path} | grep ${LAST_STUDY} | wc -l)" != 0 ]]; then
-  echo "15001nd study shouldn't be in folder initially"
+if [[ "$(ls "${max_study_path}" | grep -c "${LAST_STUDY}")" != 0 ]]; then
+  echo "15001nd Study shouldn't be in folder initially"
   exit 1
 fi
-
 if [[ ! -d "${max_study_path}${LAST_STUDY}" ]]; then
-  echo "can't navigate to 15001nd study"
+  echo "Can't navigate to 15001nd Study"
   exit 1
 fi

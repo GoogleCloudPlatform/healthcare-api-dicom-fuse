@@ -20,6 +20,7 @@ import static jnr.ffi.Platform.OS.WINDOWS;
 
 import com.google.dicomwebfuse.entities.DicomPath;
 import com.google.dicomwebfuse.entities.DicomPathLevel;
+import com.google.dicomwebfuse.entities.cache.Cache;
 import com.google.dicomwebfuse.exception.DicomFuseException;
 import com.google.dicomwebfuse.fuse.cacher.DicomPathCacher;
 import jnr.ffi.Platform.OS;
@@ -46,7 +47,8 @@ public class DicomFuse extends FuseStubFS {
   public DicomFuse(Parameters parameters) {
     this.parameters = parameters;
     DicomPathCacher dicomPathCacher = new DicomPathCacher();
-    dicomFuseHelper = new DicomFuseHelper(parameters, dicomPathCacher);
+    Cache cache = new Cache();
+    dicomFuseHelper = new DicomFuseHelper(parameters, dicomPathCacher, cache);
     dicomPathParser = new DicomPathParser(dicomPathCacher);
     os = parameters.getOs();
   }
@@ -79,7 +81,6 @@ public class DicomFuse extends FuseStubFS {
     filler.apply(buf, "..", null, 0); // add default folder
     try {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
-      dicomFuseHelper.checkExistingObject(dicomPath);
       dicomFuseHelper.fillFolder(dicomPath, buf, filler);
     } catch (DicomFuseException e) {
       LOGGER.error("readdir error", e);

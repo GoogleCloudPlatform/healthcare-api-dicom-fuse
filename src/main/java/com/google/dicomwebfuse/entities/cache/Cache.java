@@ -33,7 +33,7 @@ public class Cache {
 
   private CachedDataset cachedDataset = new CachedDataset();
 
-  private CachedDicomStore getCachedDicomStore(DicomPath dicomPath) throws DicomFuseException {
+  public CachedDicomStore getCachedDicomStore(DicomPath dicomPath) throws DicomFuseException {
     CachedDicomStore cachedDicomStore = cachedDataset.getCachedDicomStores()
         .get(dicomPath.getDicomStoreId());
     if (cachedDicomStore == null) {
