@@ -36,12 +36,12 @@ public class Constants {
   static final String PARAM_INSTANCE_ID = "SOPInstanceUID";
   static final String VALUE_PARAM_STUDY_INSTANCE_UID = "0020000D";
   static final String VALUE_PARAM_SERIES_INSTANCE_UID = "0020000E";
-  static final Integer VALUE_PARAM_MAX_LIMIT_FOR_STUDY = 5000;
-  static final Integer VALUE_PARAM_MAX_LIMIT_FOR_SERIES = 5000;
-  static final Integer VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES = 15000; // max - 50 000 results
-  static final Integer MAX_STUDIES_IN_DICOM_STORE = VALUE_PARAM_MAX_LIMIT_FOR_STUDY * 3;
-  static final Integer MAX_SERIES_IN_STUDY = VALUE_PARAM_MAX_LIMIT_FOR_SERIES * 3;
-  static final Integer MAX_INSTANCES_IN_SERIES = VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
+  public static final Integer VALUE_PARAM_MAX_LIMIT_FOR_STUDY = 5000;
+  public static final Integer VALUE_PARAM_MAX_LIMIT_FOR_SERIES = 5000;
+  public static final Integer VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES = 15000; // max - 50 000 results
+  public static final Integer MAX_STUDIES_IN_DICOM_STORE = VALUE_PARAM_MAX_LIMIT_FOR_STUDY * 3;
+  public static final Integer MAX_SERIES_IN_STUDY = VALUE_PARAM_MAX_LIMIT_FOR_SERIES * 3;
+  public static final Integer MAX_INSTANCES_IN_SERIES = VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES;
   static final Integer THREAD_COUNT = 3;
 
   static final String BEARER = "Bearer ";
