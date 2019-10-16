@@ -270,8 +270,8 @@ public class Cache {
     // milliseconds in Java 8. That's why, to avoid incorrect isBefore(instantNow) results in
     // cases where less than a millisecond has passed equals(instantNow) were included.
     Instant instantNow = Instant.now();
-    return cachedSeries.getSeriesCacheTime().isBefore(Instant.now()) ||
-        cachedStudy.getStudyCacheTime().equals(instantNow);
+    return cachedSeries.getSeriesCacheTime().isBefore(instantNow) ||
+        cachedSeries.getSeriesCacheTime().equals(instantNow);
   }
 
   public boolean isDicomStoreNotExist(DicomPath dicomPath) {

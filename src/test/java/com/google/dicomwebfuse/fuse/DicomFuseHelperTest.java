@@ -18,6 +18,10 @@ import static com.google.dicomwebfuse.EntityType.DICOM_STORE;
 import static com.google.dicomwebfuse.EntityType.INSTANCE;
 import static com.google.dicomwebfuse.EntityType.SERIES;
 import static com.google.dicomwebfuse.EntityType.STUDY;
+import static com.google.dicomwebfuse.dao.Constants.MAX_INSTANCES_IN_SERIES;
+import static com.google.dicomwebfuse.dao.Constants.MAX_SERIES_IN_STUDY;
+import static com.google.dicomwebfuse.dao.Constants.MAX_STUDIES_IN_DICOM_STORE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -74,6 +78,8 @@ class DicomFuseHelperTest {
     // caching all Studies in the current DICOM Store
     DicomPath dicomStorePath = dicomPathParser.parsePath("/test1");
     dicomFuseHelper.updateDir(dicomStorePath);
+    // checking that Studies count is 15000 in the cache
+    assertEquals(MAX_STUDIES_IN_DICOM_STORE, cache.getCachedStudies(dicomStorePath).size());
     // checking that unlisted Study is not in the cache
     DicomPath unlistedStudyPath = dicomPathParser.parsePath("/test1/15001");
     assertTrue(cache.isStudyNotExist(unlistedStudyPath));
@@ -128,6 +134,8 @@ class DicomFuseHelperTest {
     // caching all Series in the current Study
     DicomPath studyPath = dicomPathParser.parsePath("/test1/1");
     dicomFuseHelper.updateDir(studyPath);
+    // checking that Series count is 15000 in the cache
+    assertEquals(MAX_SERIES_IN_STUDY, cache.getCachedSeries(studyPath).size());
     // checking that unlisted Series is not in the cache
     DicomPath unlistedSeriesPath = dicomPathParser.parsePath("/test1/1/15001");
     assertTrue(cache.isSeriesNotExist(unlistedSeriesPath));
@@ -155,18 +163,12 @@ class DicomFuseHelperTest {
         "includefield=0020000D&limit=5000&offset=0");
     String instancesPath =
         "/test/projects/test/locations/test/datasets/test/dicomStores/test1/dicomWeb/studies/1/series/1/instances/";
-    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 0, INSTANCE,
+    TestUtils.prepareHttpClient(closeableHttpClient, 15000, 0, INSTANCE,
         HttpStatusCodes.STATUS_CODE_OK, instancesPath,
-        "includefield=0020000D&includefield=0020000E&limit=5000&offset=0");
-    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 5000, INSTANCE,
-        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
-        "includefield=0020000D&includefield=0020000E&limit=5000&offset=5000");
-    TestUtils.prepareHttpClient(closeableHttpClient, 5000, 10000, INSTANCE,
-        HttpStatusCodes.STATUS_CODE_OK, instancesPath,
-        "includefield=0020000D&includefield=0020000E&limit=5000&offset=10000");
+        "includefield=0020000D&includefield=0020000E&limit=15000&offset=0");
     TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, INSTANCE,
         HttpStatusCodes.STATUS_CODE_OK, instancesPath,
-        "includefield=0020000D&includefield=0020000E&limit=5000&offset=15000");
+        "includefield=0020000D&includefield=0020000E&limit=15000&offset=15000");
     TestUtils.prepareHttpClient(closeableHttpClient, 1, 15000, INSTANCE,
         HttpStatusCodes.STATUS_CODE_OK, instancesPath,
         "includefield=0020000D&includefield=0020000E&SOPInstanceUID=15001");
@@ -189,13 +191,15 @@ class DicomFuseHelperTest {
     // caching all Instances in the current Series
     DicomPath seriesPath = dicomPathParser.parsePath("/test1/1/1");
     dicomFuseHelper.updateDir(seriesPath);
+    // checking that Instances count is 15000 in the cache
+    assertEquals(MAX_INSTANCES_IN_SERIES, cache.getCachedInstances(seriesPath).size());
     // checking that unlisted Instance is not in the cache
     DicomPath unlistedInstancePath = dicomPathParser.parsePath("/test1/1/1/15001");
     assertTrue(cache.isInstanceNotExist(unlistedInstancePath));
     // caching unlisted Instance
     dicomFuseHelper.checkExistingObject(unlistedInstancePath);
     // checking that Instance is in the cache
-    assertFalse(cache.isSeriesNotExist(unlistedInstancePath));
+    assertFalse(cache.isInstanceNotExist(unlistedInstancePath));
   }
 
   private DicomFuseHelper prepareDicomFuseHelper(HttpClientFactory httpClientFactory, Cache cache) {
