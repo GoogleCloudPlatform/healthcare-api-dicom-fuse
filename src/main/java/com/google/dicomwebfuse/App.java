@@ -15,10 +15,16 @@
 package com.google.dicomwebfuse;
 
 import com.beust.jcommander.JCommander;
+import com.google.dicomwebfuse.exception.DicomFuseException;
 import com.google.dicomwebfuse.parser.Arguments;
+import java.io.IOException;
 import java.util.ResourceBundle;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class App {
+
+  private static final Logger LOGGER = LogManager.getLogger();
 
   public static void main(String[] args) {
 
@@ -35,7 +41,11 @@ public class App {
       return;
     }
 
-    AppMountProcess appMountProcess = new AppMountProcess();
-    appMountProcess.startMountProcess(arguments);
+    try {
+      AppMountProcess appMountProcess = new AppMountProcess(arguments);
+      appMountProcess.startMountProcess();
+    } catch (IOException | DicomFuseException e) {
+      LOGGER.error("DICOMFuse error", e);
+    }
   }
 }
