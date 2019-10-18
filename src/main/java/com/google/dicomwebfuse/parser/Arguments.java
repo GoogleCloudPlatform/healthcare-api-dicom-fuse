@@ -21,6 +21,8 @@ import com.beust.jcommander.converters.PathConverter;
 import com.google.dicomwebfuse.entities.CloudConf;
 import com.google.dicomwebfuse.entities.cache.CacheTime;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Arguments {
 
@@ -77,10 +79,17 @@ public class Arguments {
   public Path keyPath;
 
   @Parameter(
+      names = {"--extraMountOptions"},
+      descriptionKey = "option.extraMountOptions",
+      order = 6
+  )
+  public List<String> extraMountOptions = new ArrayList<>();
+
+  @Parameter(
       names = {"--help", "-h"},
       help = true,
       descriptionKey = "option.help",
-      order = 6
+      order = 7
   )
   public boolean help = false;
 }

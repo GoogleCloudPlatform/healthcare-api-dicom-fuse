@@ -22,6 +22,10 @@ public class DicomFuseException extends Exception {
     super(message);
   }
 
+  public DicomFuseException(String message, Exception e) {
+    super(message, e);
+  }
+
   public DicomFuseException(Exception e) {
     super(e);
   }
