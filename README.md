@@ -42,8 +42,9 @@ The easiest way to set up credentials is to use your user credentials with the
 To run DICOMFuse:
 
 1.  Download the latest JAR from the releases tab.
-2.  To start DICOMFuse, open a terminal in the DICOMFuse folder and input `java
-    -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
+2.  To start DICOMFuse, open a terminal in the DICOMFuse folder and input:  
+    `java -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`  
+    In Windows - `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
 3.  To stop DICOMFuse, press CTRL+C.
 
 > ERROR and INFO logs present in the terminal. During launching DICOMFuse, logs 
@@ -63,32 +64,37 @@ You can specify the following mount options when you start DICOMFuse:
     Example on Linux: /home/user/fuse-mount-folder
     Example on macOS: /Users/user/fuse-mount-folder
     Example on Windows: J:\
-  --cacheSize, -s
-    Maximum cache size in megabytes for cached instances. The maximum file size that can be
-    downloaded/uploaded is cacheSize / 4
-    Default: 10000
   --cacheTime, -t
     Each value in this option is measured in seconds.
     To optimize DICOMFuse, the following resources are cached: DICOM store folders, Study folders, Series folders,
     list of Instances (first parameter in option), and opened Instances files (second parameter).
     Opened Instance files are cached to the temporary folder in the user space on disk.
     Other objects are cached to RAM. Cached files will be deleted if you close DICOMFuse or if the cached
-    files become out of date. If you delete an Instance file locally, the cache will
-    be updated. If you upload an Instance file, the cache will be updated.
+    files become out of date. If you delete or upload an Instance file locally, the cache will
+    be invalidated, and updated if you open a folder again.
     Default: 60,300
-  --help, -h
-    Print help
-  --keyFile, -k
-    Path to the account service key
+  --cacheSize, -s
+    Maximum cache size in megabytes for cached instances. The maximum file size that can be
+    downloaded/uploaded is cacheSize / 4
+    Default: 10000
   --enableDeletion, -d
     Some programs can delete files and deletion can also be done manually. Sometimes accidental deletions can occur.
     If you don't want to delete files, you can set `--enableDeletion=false`
     Default: true
+  --keyFile, -k
+    Path to the account service key
+  --extraMountOptions
+    You can add additional mount options for libfuse, WinFsp or OSXFuse.
+    Example: --extraMountOptions allow_other,option2=VALUE,etc  Note: since DICOMFuse is specific 
+    for correct behavior in different operating systems, some mount options were included initially. 
+    See: https://github.com/GoogleCloudPlatform/healthcare-api-dicom-fuse/blob/develop/src/main/java/com/google/dicomwebfuse/MountOptions.java
+    Default: []
+  --help, -h
+    Print help
 ```
 
 > Note: * are required options. \
-> The current implementation supports 15,000 results in folders. \
-> For Windows, use `java -Dfile.encoding=UTF8 -jar healthcare-api-dicom-fuse-X.Y.Z.jar [options]`
+> The current implementation supports 15,000 results in folders. 
 
 ## Description
 
@@ -113,9 +119,13 @@ navigate through folders.
 *   Overwrite existing file.
 *   Replace operation (drag and drop) is not supported.
 
+> Note: to get better performance, you must upload files to DICOM Store folder, and
+> files must have **.dcm** or another extension.
+
 #### Operations supported in the terminal:
 
-*   cd - change a directory.
+*   cd - change a directory. Supported navigate to unpresented results in folders 
+    if they exist on the server.
 *   ls - list the objects existing in a folder.
 *   cp - copy **only instances files** (not folders) to another DICOM store or
     to a local computer.
@@ -137,10 +147,8 @@ to the temporary folder in the user space on disk. Other objects are cached to
 RAM. Cached files will be deleted if you close DICOMFuse or if the cached files
 become out of date.
 
-*   If you delete an Instance, the current Study folder, Series folder, and list
-    of Instances will be updated in the local cache.
-*   If you upload an Instance, all Study folders, Series folders, and all
-    Instances will be updated in current DICOM store in the local cache.
+*   If you delete or upload an Instance, the cache will be invalidated, and 
+    updated if you open a folder again.
 *   Before opening an Instance, the size of it is 0 bytes. If you open the
     Instance, it will be downloaded from the server and you will see the
     Instance size. If you read the Instance again, it will be reading from the
@@ -149,7 +157,7 @@ become out of date.
     server again.
 *   If you create a request (e.g. cd command in a Dataset folder) and the object
     does not exist in the local cache, the request will be sent to the server
-    and a list of objects will be updated in the local cache.
+    and object will be cached if object exist on the server.
 
 ## Packaging
 
