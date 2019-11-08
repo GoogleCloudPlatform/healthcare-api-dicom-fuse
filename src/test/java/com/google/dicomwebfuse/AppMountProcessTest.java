@@ -17,6 +17,7 @@ package com.google.dicomwebfuse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.google.dicomwebfuse.dao.FuseDao;
@@ -27,12 +28,21 @@ import com.google.dicomwebfuse.parser.Arguments;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import jnr.ffi.Platform;
 import jnr.ffi.Platform.OS;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class AppMountProcessTest {
+
+  private static OS systemOs;
+
+  @BeforeAll
+  static void setup() {
+    systemOs = Platform.getNativePlatform().getOS();
+  }
 
   @Test
   void testShouldReturnExceptionIfUserDoesNotHaveAccessToAnDataset() throws DicomFuseException {
@@ -53,6 +63,9 @@ class AppMountProcessTest {
   @Test
   void testShouldMountDicomFuseOnLinuxAndSetExtraMountOptions()
       throws IOException, DicomFuseException {
+    // Skip the test if the system OS is Windows to prevent the error during setting UID and GID
+    // in the MountOptions class
+    assumeTrue(systemOs != OS.WINDOWS);
     // Given
     Arguments arguments = new Arguments();
     // Setting extra mount options
@@ -79,6 +92,9 @@ class AppMountProcessTest {
   @Test
   void testShouldMountDicomFuseOnLinuxAndSetMountOptions()
       throws IOException, DicomFuseException {
+    // Skip the test if the system OS is Windows to prevent the error during setting UID and GID
+    // in the MountOptions class
+    assumeTrue(systemOs != OS.WINDOWS);
     // Given
     Arguments arguments = new Arguments();
     // Setting OS
@@ -152,6 +168,9 @@ class AppMountProcessTest {
   @Test
   void testShouldMountDicomFuseOnMacOsAndSetExtraMountOptions()
       throws IOException, DicomFuseException {
+    // Skip the test if the system OS is Windows to prevent the error during setting UID and GID
+    // in the MountOptions class
+    assumeTrue(systemOs != OS.WINDOWS);
     // Given
     Arguments arguments = new Arguments();
     // Setting extra mount options
@@ -178,6 +197,9 @@ class AppMountProcessTest {
   @Test
   void testShouldMountDicomFuseOnMacOsAndSetMountOptions()
       throws IOException, DicomFuseException {
+    // Skip the test if the system OS is Windows to prevent the error during setting UID and GID
+    // in the MountOptions class
+    assumeTrue(systemOs != OS.WINDOWS);
     // Given
     Arguments arguments = new Arguments();
     // Setting OS
