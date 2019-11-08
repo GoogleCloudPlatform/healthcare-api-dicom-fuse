@@ -222,6 +222,13 @@ public class FuseDaoHelper {
     fuseDao.deleteInstance(queryBuilder);
   }
 
+  public static void createDicomStore(FuseDao fuseDao, CloudConf cloudConf, DicomPath dicomPath)
+      throws DicomFuseException {
+    QueryBuilder queryBuilder = QueryBuilder.forConfiguration(cloudConf)
+        .setDicomStoreId(dicomPath.getDicomStoreId());
+    fuseDao.createDicomStore(queryBuilder);
+  }
+
   private FuseDaoHelper() {
   }
 }

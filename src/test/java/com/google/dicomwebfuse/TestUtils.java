@@ -32,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -255,6 +256,16 @@ public class TestUtils {
   }
 
   /**
+   * Generates CloseableHttpResponse.
+   *
+   * @param statusCode Http response code
+   * @return response object
+   */
+  public static CloseableHttpResponse prepareHttpResponse(int statusCode) {
+    return prepareHttpResponse(statusCode, Collections.emptyList());
+  }
+
+  /**
    * Generates CloseableHttpResponse with multiple entities.
    *
    * @param statusCode Http response code
@@ -270,7 +281,8 @@ public class TestUtils {
 
     if (httpEntities.size() == 1) {
       Mockito.when(closeableHttpResponse.getEntity()).thenReturn(httpEntities.get(0));
-    } else {
+    }
+    if (httpEntities.size() > 1) {
       BasicHttpEntity[] array = new BasicHttpEntity[httpEntities.size() - 1];
       array = httpEntities.toArray(array);
       BasicHttpEntity[] entities = Arrays.copyOfRange(array, 1, array.length);

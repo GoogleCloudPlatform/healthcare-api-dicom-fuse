@@ -117,6 +117,9 @@ navigate through folders.
 *   Upload a file in the Series folder (drag and drop).
 *   Delete a *.dcm file in the Series folder.
 *   Overwrite existing file.
+*   Create DICOM Store folder(only on Linux). If you try to create a folder at a 
+    different level, you will get the error:  
+    _Error creating directory path_to_the_directory: Operation not permitted_
 *   Replace operation (drag and drop) is not supported.
 
 > Note: to get better performance, you must upload files to DICOM Store folder, and
@@ -130,9 +133,9 @@ navigate through folders.
 *   cp - copy **only instances files** (not folders) to another DICOM store or
     to a local computer.
 *   rm - delete instances files.
-*   mkdir - is not supported. If you try to create a new folder, you will get
-    the error: \
-    _mkdir: cannot create directory ‘new-folder’: Function not implemented._
+*   Create DICOM Store folder. If you try to create a folder at a different level, 
+    you will get the error:  
+    _mkdir: cannot create directory ‘new_folder’: Operation not permitted_
 *   mv - is not supported.
 
 Any reading use cases can be used, such as de-identification or manual editing

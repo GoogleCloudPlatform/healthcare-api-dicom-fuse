@@ -23,7 +23,9 @@ import static com.google.dicomwebfuse.dao.Constants.MAX_SERIES_IN_STUDY;
 import static com.google.dicomwebfuse.dao.Constants.MAX_STUDIES_IN_DICOM_STORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.dicomwebfuse.TestUtils;
@@ -39,6 +41,7 @@ import com.google.dicomwebfuse.fuse.cacher.DicomPathCacher;
 import com.google.dicomwebfuse.parser.Arguments;
 import java.io.IOException;
 import jnr.ffi.Platform;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -202,7 +205,82 @@ class DicomFuseHelperTest {
     assertFalse(cache.isInstanceNotExist(unlistedInstancePath));
   }
 
+  @Test
+  void testCreateFolderShouldCreateIfDicomPathLevelIsDicomStore()
+      throws DicomFuseException, IOException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    String newDicomStoreFolderPath = "/newStore";
+    DicomPath newDicomStoreDicomPath = dicomPathParser.parsePath(newDicomStoreFolderPath);
+
+    CloseableHttpResponse closeableHttpResponse = TestUtils
+        .prepareHttpResponse(HttpStatusCodes.STATUS_CODE_OK);
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    Mockito.when(closeableHttpClient.execute(any())).thenReturn(closeableHttpResponse);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    Cache cache = new Cache();
+    // When
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(httpClientFactory, cache,
+        dicomPathCacher);
+    dicomFuseHelper.createDicomStoreInDataset(newDicomStoreDicomPath);
+    // Then
+    assertFalse(cache.isDicomStoreNotExist(newDicomStoreDicomPath));
+  }
+
+  @Test
+  void testCreateFolderShouldThrowExceptionIfDicomPathLevelIsStudy() throws DicomFuseException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    String newStudyFolderPath = "/Store/111";
+    DicomPath newStudyDicomPath = dicomPathParser.parsePath(newStudyFolderPath);
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(dicomPathCacher);
+    // Then
+    assertThrows(DicomFuseException.class,
+        () -> dicomFuseHelper.createDicomStoreInDataset(newStudyDicomPath));
+  }
+
+  @Test
+  void testCreateFolderShouldThrowExceptionIfDicomPathLevelIsSeries() throws DicomFuseException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    String newSeriesFolderPath = "/Store/111/222";
+    DicomPath newSeriesDicomPath = dicomPathParser.parsePath(newSeriesFolderPath);
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(dicomPathCacher);
+    // Then
+    assertThrows(DicomFuseException.class,
+        () -> dicomFuseHelper.createDicomStoreInDataset(newSeriesDicomPath));
+  }
+
+  @Test
+  void testCreateFolderShouldThrowExceptionIfDicomPathLevelIsInstance() throws DicomFuseException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    String newInstanceFolderPath = "/Store/111/222/333";
+    DicomPath newInstanceDicomPath = dicomPathParser.parsePath(newInstanceFolderPath);
+    DicomFuseHelper dicomFuseHelper = prepareDicomFuseHelper(dicomPathCacher);
+    // Then
+    assertThrows(DicomFuseException.class,
+        () -> dicomFuseHelper.createDicomStoreInDataset(newInstanceDicomPath));
+  }
+
+  private DicomFuseHelper prepareDicomFuseHelper(DicomPathCacher dicomPathCacher) {
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    Cache cache = new Cache();
+    return prepareDicomFuseHelper(httpClientFactory, cache, dicomPathCacher);
+  }
+
   private DicomFuseHelper prepareDicomFuseHelper(HttpClientFactory httpClientFactory, Cache cache) {
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    return prepareDicomFuseHelper(httpClientFactory, cache, dicomPathCacher);
+  }
+
+  private DicomFuseHelper prepareDicomFuseHelper(HttpClientFactory httpClientFactory, Cache cache,
+      DicomPathCacher dicomPathCacher) {
     String TEST = "test";
     AuthAdc authAdc = TestUtils.prepareAuthAdc(TEST);
     CloudConf cloudConf = new CloudConf(TEST, TEST, TEST, TEST);
@@ -211,7 +289,6 @@ class DicomFuseHelperTest {
     arguments.cloudConf = cloudConf;
     Parameters parameters = new Parameters(fuseDao, arguments,
         Platform.getNativePlatform().getOS());
-    DicomPathCacher dicomPathCacher = new DicomPathCacher();
     return new DicomFuseHelper(parameters, dicomPathCacher, cache);
   }
 }
