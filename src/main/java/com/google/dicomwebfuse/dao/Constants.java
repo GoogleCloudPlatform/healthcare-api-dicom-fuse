@@ -34,6 +34,7 @@ public class Constants {
   static final String PARAM_STUDY_ID = "StudyInstanceUID";
   static final String PARAM_SERIES_ID = "SeriesInstanceUID";
   static final String PARAM_INSTANCE_ID = "SOPInstanceUID";
+  static final String PARAM_DICOM_STORE_ID = "dicomStoreId";
   static final String VALUE_PARAM_STUDY_INSTANCE_UID = "0020000D";
   static final String VALUE_PARAM_SERIES_INSTANCE_UID = "0020000E";
   public static final Integer VALUE_PARAM_MAX_LIMIT_FOR_STUDY = 5000;

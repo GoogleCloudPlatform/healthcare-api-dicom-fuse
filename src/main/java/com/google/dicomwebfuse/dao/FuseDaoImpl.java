@@ -20,6 +20,7 @@ import static com.google.dicomwebfuse.dao.Constants.APPLICATION_JSON_CHARSET_UTF
 import static com.google.dicomwebfuse.dao.Constants.BEARER;
 import static com.google.dicomwebfuse.dao.Constants.HEALTHCARE_HOST;
 import static com.google.dicomwebfuse.dao.Constants.MULTIPART_RELATED_TYPE_APPLICATION_DICOM_BOUNDARY;
+import static com.google.dicomwebfuse.dao.Constants.PARAM_DICOM_STORE_ID;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_INCLUDE_FIELD;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_INSTANCE_ID;
 import static com.google.dicomwebfuse.dao.Constants.PARAM_LIMIT;
@@ -256,6 +257,29 @@ public class FuseDaoImpl implements FuseDao {
         .setHost(HEALTHCARE_HOST)
         .setPath(instancePathBuilder.toPath());
     createRequestToDeleteInstance(uriBuilder);
+  }
+
+  @Override
+  public void createDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
+    DicomStoresPathBuilder dicomStoresPathBuilder = new DicomStoresPathBuilder(queryBuilder);
+    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+      URI uri = new URIBuilder()
+          .setScheme(SCHEME)
+          .setHost(HEALTHCARE_HOST)
+          .setPath(dicomStoresPathBuilder.toPath())
+          .setParameter(PARAM_DICOM_STORE_ID, queryBuilder.getDicomStoreId())
+          .build();
+      HttpPost request = new HttpPost(uri);
+      request.addHeader(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF8);
+      GoogleCredentials credentials = authAdc.getCredentials();
+      String tokenValue = credentials.getAccessToken().getTokenValue();
+      request.addHeader(AUTHORIZATION, BEARER + tokenValue);
+      try (CloseableHttpResponse response = httpclient.execute(request)) {
+        checkStatusCode(response, uri);
+      }
+    } catch (IOException | URISyntaxException e) {
+      throw new DicomFuseException(e);
+    }
   }
 
   private <T> T createRequestForObjectList(URIBuilder uriBuilder, TypeReference<T> typeReference)

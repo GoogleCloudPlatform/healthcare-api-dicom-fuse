@@ -14,6 +14,7 @@
 
 package com.google.dicomwebfuse.fuse;
 
+import static com.google.dicomwebfuse.entities.DicomPathLevel.DICOM_STORE;
 import static com.google.dicomwebfuse.entities.DicomPathLevel.SERIES;
 import static com.google.dicomwebfuse.entities.DicomPathLevel.STUDY;
 import static com.google.dicomwebfuse.fuse.FuseConstants.DCM_EXTENSION;
@@ -434,6 +435,20 @@ class DicomFuseHelper {
     LOGGER.info("Instance was deleted - " + dicomPath);
     downloadCacher.removePath(dicomPath);
     invalidateDicomStoreCache(dicomPath);
+  }
+
+  void createDicomStoreInDataset(DicomPath dicomPath) throws DicomFuseException {
+    if (dicomPath.getDicomPathLevel() == DICOM_STORE) {
+      FuseDaoHelper.createDicomStore(parameters.getFuseDAO(), parameters.getCloudConf(), dicomPath);
+      String dicomStoreId = dicomPath.getDicomStoreId();
+      DicomStore dicomStore = new DicomStore();
+      dicomStore.setDicomStoreId(dicomStoreId);
+      CachedDicomStore newCachedDicomStore = new CachedDicomStore(dicomStore);
+      cache.getCachedDicomStores().put(dicomStoreId, newCachedDicomStore);
+      LOGGER.info("DICOM Store was created - " + dicomPath);
+    } else {
+      throw new DicomFuseException("You can only create DICOM Store folder");
+    }
   }
 
   private void updateDicomStoresInDataset() throws DicomFuseException {

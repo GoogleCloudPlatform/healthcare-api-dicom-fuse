@@ -209,6 +209,19 @@ public class DicomFuse extends FuseStubFS {
   }
 
   @Override
+  public int mkdir(String path, long mode) {
+    LOGGER.debug("mkdir " + path);
+    try {
+      DicomPath dicomPath = dicomPathParser.parsePath(path);
+      dicomFuseHelper.createDicomStoreInDataset(dicomPath);
+    } catch (DicomFuseException e) {
+      LOGGER.error("mkdir error", e);
+      return -ErrorCodes.EPERM();
+    }
+    return 0;
+  }
+
+  @Override
   public int statfs(String path, Statvfs stbuf) {
     if (os == WINDOWS || os == DARWIN) {
       if ("/".equals(path)) {
