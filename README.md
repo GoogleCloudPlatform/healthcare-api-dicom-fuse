@@ -117,9 +117,11 @@ navigate through folders.
 *   Upload a file in the Series folder (drag and drop).
 *   Delete a *.dcm file in the Series folder.
 *   Overwrite existing file.
-*   Create DICOM Store folder(only on Linux). If you try to create a folder at a 
+*   Create DICOM Store folder. If you try to create a folder at a 
     different level, you will get the error:  
     _Error creating directory path_to_the_directory: Operation not permitted_
+*   Rename empty DICOM Store (previous DICOM Store will be deleted and a new one will be created. 
+    Only supported for empty DICOM Stores, otherwise an error will be returned).
 *   Replace operation (drag and drop) is not supported.
 
 > Note: to get better performance, you must upload files to DICOM Store folder, and
@@ -136,7 +138,8 @@ navigate through folders.
 *   Create DICOM Store folder. If you try to create a folder at a different level, 
     you will get the error:  
     _mkdir: cannot create directory ‘new_folder’: Operation not permitted_
-*   mv - is not supported.
+*   mv - rename empty DICOM Store (previous DICOM Store will be deleted and a new one will be 
+    created. Only supported for empty DICOM Stores, otherwise an error will be returned).
 
 Any reading use cases can be used, such as de-identification or manual editing
 of the (binary) DICOM object.
