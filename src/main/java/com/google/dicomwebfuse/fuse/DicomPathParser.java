@@ -46,8 +46,18 @@ class DicomPathParser {
     DicomPath tempDicomPath;
     switch (pathRESTLength) {
       case 1:
+        String dicomStoreName;
+        if(pathREST[0].contains(" ")) {
+          // macOS and Windows by default create a folder with white spaces in the GUI, but the
+          // Healthcare API doesn't support white spaces in the DICOM store name.
+          // DICOM Store must match ^[\p{L}\p{N}_\-\.]{1,256}$
+          // White spaces will be replaced with underscores.
+          dicomStoreName = pathREST[0].replace(" ","_");
+        } else {
+          dicomStoreName = pathREST[0];
+        }
         dicomPath = new DicomPath.Builder(DicomPathLevel.DICOM_STORE)
-            .dicomStoreId(pathREST[0])
+            .dicomStoreId(dicomStoreName)
             .build();
         break;
       case 2:

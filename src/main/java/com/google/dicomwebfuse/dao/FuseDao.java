@@ -37,4 +37,5 @@ public interface FuseDao {
   void uploadInstance(QueryBuilder queryBuilder) throws DicomFuseException;
   void deleteInstance(QueryBuilder queryBuilder) throws DicomFuseException;
   void createDicomStore(QueryBuilder queryBuilder) throws DicomFuseException;
+  void deleteDicomStore(QueryBuilder queryBuilder) throws DicomFuseException;
 }

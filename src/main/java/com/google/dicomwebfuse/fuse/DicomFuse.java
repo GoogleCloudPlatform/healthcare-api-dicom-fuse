@@ -222,6 +222,21 @@ public class DicomFuse extends FuseStubFS {
   }
 
   @Override
+  public int rename(String oldPath, String newPath) {
+    // See: http://man7.org/linux/man-pages/man2/rename.2.html
+    LOGGER.debug("rename " + oldPath + " to " + newPath);
+    try {
+      DicomPath oldDicomPath = dicomPathParser.parsePath(oldPath);
+      DicomPath newDicomPath = dicomPathParser.parsePath(newPath);
+      dicomFuseHelper.renameDicomStoreInDataset(oldDicomPath, newDicomPath);
+    } catch (DicomFuseException e) {
+      LOGGER.error("rename error", e);
+      return -ErrorCodes.ENOENT();
+    }
+    return 0;
+  }
+
+  @Override
   public int statfs(String path, Statvfs stbuf) {
     if (os == WINDOWS || os == DARWIN) {
       if ("/".equals(path)) {
@@ -263,11 +278,6 @@ public class DicomFuse extends FuseStubFS {
   @Override
   public int truncate(String path, long size) {
     return super.truncate(path, size);
-  }
-
-  @Override
-  public int rename(String oldpath, String newpath) {
-    return super.rename(oldpath, newpath);
   }
 
   @Override

@@ -267,6 +267,56 @@ class DicomFuseHelperTest {
         () -> dicomFuseHelper.createDicomStoreInDataset(newInstanceDicomPath));
   }
 
+  @Test
+  void testRenameDicomStoreShouldRenameIfDicomStoreIsEmpty()
+      throws IOException, DicomFuseException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    CloseableHttpResponse closeableHttpResponse = TestUtils
+        .prepareHttpResponse(HttpStatusCodes.STATUS_CODE_OK);
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    Mockito.when(closeableHttpClient.execute(any())).thenReturn(closeableHttpResponse);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    Cache cache = new Cache();
+    DicomFuseHelper dicomFuseHelper = Mockito.spy(prepareDicomFuseHelper(httpClientFactory, cache,
+        dicomPathCacher));
+    String newDicomStorePath = "/newStore";
+    DicomPath newDicomStoreDicomPath = dicomPathParser.parsePath(newDicomStorePath);
+    String oldDicomStorePath = "/emptyOldStore";
+    DicomPath oldDicomStoreDicomPath = dicomPathParser.parsePath(oldDicomStorePath);
+    Mockito.doReturn(true).when(dicomFuseHelper).isDicomStoreEmpty(oldDicomStoreDicomPath);
+    // When
+    dicomFuseHelper.renameDicomStoreInDataset(oldDicomStoreDicomPath, newDicomStoreDicomPath);
+    // Then
+    assertFalse(cache.isDicomStoreNotExist(newDicomStoreDicomPath));
+  }
+
+  @Test
+  void testRenameDicomStoreShouldNotRenameIfDicomStoreIsNotEmpty()
+      throws IOException, DicomFuseException {
+    // Given
+    DicomPathCacher dicomPathCacher = new DicomPathCacher();
+    DicomPathParser dicomPathParser = new DicomPathParser(dicomPathCacher);
+    CloseableHttpResponse closeableHttpResponse = TestUtils
+        .prepareHttpResponse(HttpStatusCodes.STATUS_CODE_OK);
+    CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
+    Mockito.when(closeableHttpClient.execute(any())).thenReturn(closeableHttpResponse);
+    HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);
+    Cache cache = new Cache();
+    DicomFuseHelper dicomFuseHelper = Mockito.spy(prepareDicomFuseHelper(httpClientFactory, cache,
+        dicomPathCacher));
+    String newDicomStorePath = "/newStore";
+    DicomPath newDicomStoreDicomPath = dicomPathParser.parsePath(newDicomStorePath);
+    String oldDicomStorePath = "/notEmptyOldStore";
+    DicomPath oldDicomStoreDicomPath = dicomPathParser.parsePath(oldDicomStorePath);
+    Mockito.doReturn(false).when(dicomFuseHelper).isDicomStoreEmpty(oldDicomStoreDicomPath);
+    // Then
+    assertThrows(DicomFuseException.class,
+        () -> dicomFuseHelper
+            .renameDicomStoreInDataset(oldDicomStoreDicomPath, newDicomStoreDicomPath));
+  }
+
   private DicomFuseHelper prepareDicomFuseHelper(DicomPathCacher dicomPathCacher) {
     CloseableHttpClient closeableHttpClient = Mockito.mock(CloseableHttpClient.class);
     HttpClientFactory httpClientFactory = TestUtils.prepareHttpClientFactory(closeableHttpClient);

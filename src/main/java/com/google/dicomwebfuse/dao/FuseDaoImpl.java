@@ -45,6 +45,7 @@ import com.google.api.client.http.HttpStatusCodes;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
+import com.google.dicomwebfuse.dao.spec.DicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.DicomStoresPathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancePathBuilder;
@@ -271,6 +272,27 @@ public class FuseDaoImpl implements FuseDao {
           .build();
       HttpPost request = new HttpPost(uri);
       request.addHeader(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF8);
+      GoogleCredentials credentials = authAdc.getCredentials();
+      String tokenValue = credentials.getAccessToken().getTokenValue();
+      request.addHeader(AUTHORIZATION, BEARER + tokenValue);
+      try (CloseableHttpResponse response = httpclient.execute(request)) {
+        checkStatusCode(response, uri);
+      }
+    } catch (IOException | URISyntaxException e) {
+      throw new DicomFuseException(e);
+    }
+  }
+
+  @Override
+  public void deleteDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
+    DicomStorePathBuilder dicomStorePathBuilder = new DicomStorePathBuilder(queryBuilder);
+    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+      URI uri = new URIBuilder()
+          .setScheme(SCHEME)
+          .setHost(HEALTHCARE_HOST)
+          .setPath(dicomStorePathBuilder.toPath())
+          .build();
+      HttpDelete request = new HttpDelete(uri);
       GoogleCredentials credentials = authAdc.getCredentials();
       String tokenValue = credentials.getAccessToken().getTokenValue();
       request.addHeader(AUTHORIZATION, BEARER + tokenValue);

@@ -451,6 +451,36 @@ class DicomFuseHelper {
     }
   }
 
+  void renameDicomStoreInDataset(DicomPath oldDicomPath, DicomPath newDicomPath)
+      throws DicomFuseException {
+    if (newDicomPath.getDicomPathLevel() == DICOM_STORE) {
+      if (isDicomStoreEmpty(oldDicomPath)) {
+        FuseDaoHelper
+            .deleteDicomStore(parameters.getFuseDAO(), parameters.getCloudConf(), oldDicomPath);
+        LOGGER.info("DICOM Store was deleted - " + oldDicomPath);
+        cache.getCachedDicomStores().remove(oldDicomPath.getDicomStoreId());
+        FuseDaoHelper
+            .createDicomStore(parameters.getFuseDAO(), parameters.getCloudConf(), newDicomPath);
+        String dicomStoreId = newDicomPath.getDicomStoreId();
+        DicomStore dicomStore = new DicomStore();
+        dicomStore.setDicomStoreId(dicomStoreId);
+        CachedDicomStore newCachedDicomStore = new CachedDicomStore(dicomStore);
+        cache.getCachedDicomStores().put(dicomStoreId, newCachedDicomStore);
+        LOGGER.info("DICOM Store was created - " + newDicomPath);
+      } else {
+        throw new DicomFuseException("DICOM Store " + oldDicomPath + " should be empty");
+      }
+    } else {
+      throw new DicomFuseException("You can only rename DICOM Store folder");
+    }
+  }
+
+  boolean isDicomStoreEmpty(DicomPath dicomPath) throws DicomFuseException {
+    List<Study> studies =
+        FuseDaoHelper.getStudies(parameters.getFuseDAO(), parameters.getCloudConf(), dicomPath);
+    return studies.size() == 0;
+  }
+
   private void updateDicomStoresInDataset() throws DicomFuseException {
     List<DicomStore> dicomStoreList =
         FuseDaoHelper.getAllDicomStores(parameters.getFuseDAO(), parameters.getCloudConf());
