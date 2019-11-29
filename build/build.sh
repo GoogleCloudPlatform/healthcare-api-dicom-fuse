@@ -27,10 +27,14 @@ readonly dicom_store_name="$(openssl rand -hex 12)"
 readonly mount_folder="dicom"
 mkdir "${mount_folder}"
 # Create unique DICOM Store
-gcloud alpha healthcare dicom-stores create "${dicom_store_name}" \
+if ! gcloud beta healthcare dicom-stores create "${dicom_store_name}" \
   --location="${LOCATION}" \
   --dataset="${DATASET}" \
   --quiet
+then
+  echo "Failed to create DICOM Store"
+  exit 1
+fi
 # Install libfuse
 apt update
 apt install -y libfuse2
@@ -62,10 +66,14 @@ diff_result=$?
 rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
 rm_result=$?
 # Delete created DICOMStore
-gcloud alpha healthcare dicom-stores delete "${dicom_store_name}" \
-  --location=$LOCATION \
-  --dataset=$DATASET \
+if ! gcloud beta healthcare dicom-stores delete "${dicom_store_name}" \
+  --location="${LOCATION}" \
+  --dataset="${DATASET}" \
   --quiet
+then
+  echo "Failed to delete DICOM Store"
+  exit 1
+fi
 # Check exit codes of all operations
 check_exit_code() {
   exit_code="${1}"
