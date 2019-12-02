@@ -65,6 +65,13 @@ diff_result=$?
 # Run 111.dcm instance deletion in DICOM Store
 rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
 rm_result=$?
+# Create DICOM Store
+mkdir "/workspace/${mount_folder}/test Store-1"
+mkdir_result=$?
+# Rename DICOM Store
+mv "/workspace/${mount_folder}/test_Store-1" \
+  "/workspace/${mount_folder}/test_Store-2"
+mv_result=$?
 # Delete created DICOMStore
 if ! gcloud beta healthcare dicom-stores delete "${dicom_store_name}" \
   --location="${LOCATION}" \
@@ -84,22 +91,28 @@ check_exit_code() {
   fi
 }
 check_exit_code "${cp_to_dicom_store_result}" \
-  "Copying to DICOM Store failed!"
+  "Copying to DICOM Store failed"
 check_exit_code "${cp_from_dicom_store_result}" \
-  "Copying from DICOM Store failed!"
+  "Copying from DICOM Store failed"
 check_exit_code "${diff_result}" \
-  "Files are not equal!"
+  "Files are not equal"
 check_exit_code "${rm_result}" \
-  "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed!"
+  "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed"
+check_exit_code "${mkdir_result}" \
+  "Failed to create DICOM Store"
+check_exit_code "${mv_result}" \
+  "Failed to rename DICOM Store"
 
 max_study_path="/workspace/${mount_folder}/${MAX_STUDY_STORE}/"
-studies_in_store=$(ls "${max_study_path}" | wc -l)
+studies_in_store=$(($(find "${max_study_path}" -maxdepth 1 -type d | wc -l) - 1))
 
 if [[ "${studies_in_store}" != 15000 ]]; then
   echo "DICOM Store don't have enough studies for test"
   exit 1
 fi
-if [[ "$(ls "${max_study_path}" | grep -c "${LAST_STUDY}")" != 0 ]]; then
+if [[ $(find "${max_study_path}" -maxdepth 1 -type d -name "${LAST_STUDY}" \
+  | grep -c "${LAST_STUDY}") != 0 ]]
+then
   echo "15001nd Study shouldn't be in folder initially"
   exit 1
 fi
