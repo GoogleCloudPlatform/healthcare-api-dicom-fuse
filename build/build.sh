@@ -21,8 +21,10 @@ readonly DATASET="${4}"
 readonly MAX_STUDY_STORE="${5}"
 readonly LAST_STUDY="${6}"
 
-# Create unique DICOM Store name
+# Create unique DICOM Store names
 readonly dicom_store_name="$(openssl rand -hex 12)"
+readonly test_store_1="$(openssl rand -hex 12)"
+readonly test_store_2="$(openssl rand -hex 12)"
 # Create a folder to mount DICOMFuse
 readonly mount_folder="dicom"
 mkdir "${mount_folder}"
@@ -66,14 +68,22 @@ diff_result=$?
 rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
 rm_result=$?
 # Create DICOM Store
-mkdir "/workspace/${mount_folder}/test Store-1"
+mkdir "/workspace/${mount_folder}/${test_store_1}"
 mkdir_result=$?
 # Rename DICOM Store
-mv "/workspace/${mount_folder}/test_Store-1" \
-  "/workspace/${mount_folder}/test_Store-2"
+mv "/workspace/${mount_folder}/${test_store_1}" \
+  "/workspace/${mount_folder}/${test_store_2}"
 mv_result=$?
-# Delete created DICOMStore
+# Delete created DICOM Stores
 if ! gcloud beta healthcare dicom-stores delete "${dicom_store_name}" \
+  --location="${LOCATION}" \
+  --dataset="${DATASET}" \
+  --quiet
+then
+  echo "Failed to delete DICOM Store"
+  exit 1
+fi
+if ! gcloud beta healthcare dicom-stores delete "${test_store_2}" \
   --location="${LOCATION}" \
   --dataset="${DATASET}" \
   --quiet
