@@ -16,7 +16,7 @@
     <repository>
       <id>jcenter</id>
       <name>jcenter-bintray</name>
-      <url>http://jcenter.bintray.com</url>
+      <url>https://dl.bintray.com/serce/maven</url>
     </repository>
   </repositories>
 
