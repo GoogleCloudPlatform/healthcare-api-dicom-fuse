@@ -212,6 +212,12 @@ public class DicomFuse extends FuseStubFS {
   public int mkdir(String path, long mode) {
     LOGGER.debug("mkdir " + path);
     try {
+      dicomFuseHelper.checkPath(path);
+    } catch (DicomFuseException e) {
+      LOGGER.debug(e);
+      return -ErrorCodes.EPERM();
+    }
+    try {
       DicomPath dicomPath = dicomPathParser.parsePath(path);
       dicomFuseHelper.createDicomStoreInDataset(dicomPath);
     } catch (DicomFuseException e) {

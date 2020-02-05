@@ -130,3 +130,19 @@ if [[ ! -d "${max_study_path}${LAST_STUDY}" ]]; then
   echo "Can't navigate to 15001nd Study"
   exit 1
 fi
+
+# Check creation of forbidden folder
+folder_name=".Trash-1000"
+mkdir "/workspace/${mount_folder}/${folder_name}"
+if gcloud beta healthcare dicom-stores describe "${folder_name}" \
+  --location="${LOCATION}" \
+  --dataset="${DATASET}" \
+  --quiet
+then
+  echo "Error. The forbidden folder ${folder_name} was created."
+  gcloud beta healthcare dicom-stores delete "${folder_name}" \
+  --location="${LOCATION}" \
+  --dataset="${DATASET}" \
+  --quiet
+  exit 1
+fi
