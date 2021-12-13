@@ -71,6 +71,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.http.HttpEntity;
@@ -144,7 +145,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_STUDY.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectsList(uriBuilder, new TypeReference<Study>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Study>>() {});
   }
 
   @Override
@@ -157,7 +158,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_STUDY_ID, queryBuilder.getStudyId())
         .setPath(path);
     List<Study> studies =
-        createRequestForObjectsList(uriBuilder, new TypeReference<Study>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Study>>() {});
     if (studies.size() == 0) {
       throw new DicomFuseException("Study not found");
     }
@@ -175,7 +176,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_SERIES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectsList(uriBuilder, new TypeReference<Series>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Series>>() {});
   }
 
 
@@ -190,7 +191,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_SERIES_ID, queryBuilder.getSeriesId())
         .setPath(path);
     List<Series> series =
-        createRequestForObjectsList(uriBuilder, new TypeReference<Series>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Series>>() {});
     if (series.size() == 0) {
       throw new DicomFuseException("Series not found");
     }
@@ -209,7 +210,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectsList(uriBuilder, new TypeReference<Instance>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Instance>>() {});
   }
 
   @Override
@@ -224,7 +225,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_INSTANCE_ID, queryBuilder.getInstanceId())
         .setPath(path);
     List<Instance> instances =
-        createRequestForObjectsList(uriBuilder, new TypeReference<Instance>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Instance>>() {});
     if (instances.size() == 0) {
       throw new DicomFuseException("Instance not found");
     }
@@ -330,7 +331,7 @@ public class FuseDaoImpl implements FuseDao {
     return result;
   }
 
-  private <T> List<T> createRequestForObjectsList(URIBuilder uriBuilder, TypeReference<T> typeReference)
+  private <T> List<T> createRequestForObjectsList(URIBuilder uriBuilder, TypeReference<List<T>> typeReference)
       throws DicomFuseException {
     List<T> result;
     try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
@@ -344,11 +345,10 @@ public class FuseDaoImpl implements FuseDao {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode == HttpStatusCodes.STATUS_CODE_OK) {
           try (InputStream inputStream = response.getEntity().getContent()) {
-            result = objectMapper.readValue(inputStream, new TypeReference<List<T>>() {
-            });
+            result = objectMapper.readValue(inputStream, typeReference);
           }
         } else if (statusCode == HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
-          result = new ArrayList<>();
+          result = new ArrayList<T>();
         } else {
           throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
               statusCode);
