@@ -403,7 +403,7 @@ public class FuseDaoImpl implements FuseDao {
 
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
     int statusCode = response.getStatusLine().getStatusCode();
-    if (statusCode != HttpStatusCodes.STATUS_CODE_OK || statusCode != HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
+    if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
       throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
           statusCode);
     }
