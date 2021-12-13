@@ -21,6 +21,16 @@ readonly DATASET="${4}"
 readonly MAX_STUDY_STORE="${5}"
 readonly LAST_STUDY="${6}"
 
+# Check exit codes of all operations
+check_exit_code() {
+  exit_code="${1}"
+  error_message="${2}"
+  if [[ "${exit_code}" != 0 ]]; then
+    echo "${error_message}"
+    exit 1
+  fi
+}
+
 # Create unique DICOM Store names
 readonly dicom_store_name="dicom_store_name_$(openssl rand -hex 12)"
 readonly test_store_1="test_store_1_$(openssl rand -hex 12)"
@@ -57,23 +67,35 @@ done
 # StudyInstanceUID 111 SeriesInstanceUID and 111 SOPInstanceUID
 cp /workspace/build/example.dcm "/workspace/${mount_folder}/${dicom_store_name}/"
 cp_to_dicom_store_result=$?
+check_exit_code "${cp_to_dicom_store_result}" \
+  "Copying to DICOM Store failed"
 # Copy uploaded example.dcm from DICOM Store to the local workspace folder.
 # Downloaded dcm file has SOPInstanceUID.dcm name or 111.dcm
 cp "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm" /workspace/build/
 cp_from_dicom_store_result=$?
+check_exit_code "${cp_from_dicom_store_result}" \
+  "Copying from DICOM Store failed"
 # Run files comparison using the diff app
 diff /workspace/build/example.dcm /workspace/build/111.dcm
 diff_result=$?
+check_exit_code "${diff_result}" \
+  "Files are not equal"
 # Run 111.dcm instance deletion in DICOM Store
 rm "/workspace/${mount_folder}/${dicom_store_name}/111/111/111.dcm"
 rm_result=$?
+check_exit_code "${rm_result}" \
+  "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed"
 # Create DICOM Store
 mkdir "/workspace/${mount_folder}/${test_store_1}"
 mkdir_result=$?
+check_exit_code "${mkdir_result}" \
+  "Failed to create DICOM Store"
 # Rename DICOM Store
 mv "/workspace/${mount_folder}/${test_store_1}" \
   "/workspace/${mount_folder}/${test_store_2}"
 mv_result=$?
+check_exit_code "${mv_result}" \
+  "Failed to rename DICOM Store"
 # Delete created DICOM Stores
 if ! gcloud beta healthcare dicom-stores delete "${dicom_store_name}" \
   --location="${LOCATION}" \
@@ -91,27 +113,6 @@ then
   echo "Failed to delete DICOM Store"
   exit 1
 fi
-# Check exit codes of all operations
-check_exit_code() {
-  exit_code="${1}"
-  error_message="${2}"
-  if [[ "${exit_code}" != 0 ]]; then
-    echo "${error_message}"
-    exit 1
-  fi
-}
-check_exit_code "${cp_to_dicom_store_result}" \
-  "Copying to DICOM Store failed"
-check_exit_code "${cp_from_dicom_store_result}" \
-  "Copying from DICOM Store failed"
-check_exit_code "${diff_result}" \
-  "Files are not equal"
-check_exit_code "${rm_result}" \
-  "Removing 111.dcm instance in ${dicom_store_name} DICOM Store failed"
-check_exit_code "${mkdir_result}" \
-  "Failed to create DICOM Store"
-check_exit_code "${mv_result}" \
-  "Failed to rename DICOM Store"
 
 max_study_path="/workspace/${mount_folder}/${MAX_STUDY_STORE}/"
 studies_in_store=$(($(find "${max_study_path}" -maxdepth 1 -type d | wc -l) - 1))
