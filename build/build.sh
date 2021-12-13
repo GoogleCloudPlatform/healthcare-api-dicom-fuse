@@ -22,9 +22,9 @@ readonly MAX_STUDY_STORE="${5}"
 readonly LAST_STUDY="${6}"
 
 # Create unique DICOM Store names
-readonly dicom_store_name="$(openssl rand -hex 12)"
-readonly test_store_1="$(openssl rand -hex 12)"
-readonly test_store_2="$(openssl rand -hex 12)"
+readonly dicom_store_name="dicom_store_name_$(openssl rand -hex 12)"
+readonly test_store_1="test_store_1_$(openssl rand -hex 12)"
+readonly test_store_2="test_store_2_$(openssl rand -hex 12)"
 # Create a folder to mount DICOMFuse
 readonly mount_folder="dicom"
 mkdir "${mount_folder}"
