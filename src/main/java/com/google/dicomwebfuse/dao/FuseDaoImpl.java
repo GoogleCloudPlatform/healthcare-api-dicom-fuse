@@ -38,20 +38,22 @@ import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
 import com.google.dicomwebfuse.dao.spec.DicomStorePathBuilder;
-import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.DicomStoresPathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancePathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancesPathBuilder;
 import com.google.dicomwebfuse.dao.spec.QueryBuilder;
 import com.google.dicomwebfuse.dao.spec.SeriesPathBuilder;
+import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.StudiesPathBuilder;
 import com.google.dicomwebfuse.entities.DicomPath;
 import com.google.dicomwebfuse.entities.DicomStore;
@@ -263,7 +265,7 @@ public class FuseDaoImpl implements FuseDao {
   @Override
   public void createDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
     DicomStoresPathBuilder dicomStoresPathBuilder = new DicomStoresPathBuilder(queryBuilder);
-    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = new URIBuilder()
           .setScheme(SCHEME)
           .setHost(HEALTHCARE_HOST)
@@ -286,7 +288,7 @@ public class FuseDaoImpl implements FuseDao {
   @Override
   public void deleteDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
     DicomStorePathBuilder dicomStorePathBuilder = new DicomStorePathBuilder(queryBuilder);
-    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = new URIBuilder()
           .setScheme(SCHEME)
           .setHost(HEALTHCARE_HOST)
@@ -318,6 +320,8 @@ public class FuseDaoImpl implements FuseDao {
         checkStatusCode(response, uri);
         try (InputStream inputStream = response.getEntity().getContent()) {
           result = objectMapper.readValue(inputStream, typeReference);
+        } catch (JsonParseException | JsonMappingException e) {
+          throw new DicomFuseException(e);
         }
       }
     } catch (IOException | URISyntaxException e) {
@@ -403,7 +407,7 @@ public class FuseDaoImpl implements FuseDao {
 
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
     int statusCode = response.getStatusLine().getStatusCode();
-    if (statusCode != HttpStatusCodes.STATUS_CODE_OK) {
+    if (statusCode != HttpStatusCodes.STATUS_CODE_OK && statusCode != HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
       throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
           statusCode);
     }
