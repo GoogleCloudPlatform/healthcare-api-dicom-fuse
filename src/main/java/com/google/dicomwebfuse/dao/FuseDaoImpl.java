@@ -144,7 +144,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_STUDY.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<Study>() {});
   }
 
   @Override
@@ -157,7 +157,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_STUDY_ID, queryBuilder.getStudyId())
         .setPath(path);
     List<Study> studies =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<Study>() {});
     if (studies.size() == 0) {
       throw new DicomFuseException("Study not found");
     }
@@ -175,7 +175,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_SERIES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<Series>() {});
   }
 
 
@@ -190,7 +190,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_SERIES_ID, queryBuilder.getSeriesId())
         .setPath(path);
     List<Series> series =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<Series>() {});
     if (series.size() == 0) {
       throw new DicomFuseException("Series not found");
     }
@@ -209,7 +209,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<Instance>() {});
   }
 
   @Override
@@ -224,7 +224,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_INSTANCE_ID, queryBuilder.getInstanceId())
         .setPath(path);
     List<Instance> instances =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<Instance>() {});
     if (instances.size() == 0) {
       throw new DicomFuseException("Instance not found");
     }
@@ -322,6 +322,36 @@ public class FuseDaoImpl implements FuseDao {
           result = objectMapper.readValue(inputStream, typeReference);
         } catch (JsonParseException | JsonMappingException e) {
           throw new DicomFuseException(e);
+        }
+      }
+    } catch (IOException | URISyntaxException e) {
+      throw new DicomFuseException(e);
+    }
+    return result;
+  }
+
+  private <T> List<T> createRequestForObjectsList(URIBuilder uriBuilder, TypeReference<T> typeReference)
+      throws DicomFuseException {
+    List<T> result;
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
+      URI uri = uriBuilder.build();
+      HttpGet request = new HttpGet(uri);
+      request.addHeader(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF8);
+      GoogleCredentials credentials = authAdc.getCredentials();
+      String tokenValue = credentials.getAccessToken().getTokenValue();
+      request.addHeader(AUTHORIZATION, BEARER + tokenValue);
+      try (CloseableHttpResponse response = httpclient.execute(request)) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode == HttpStatusCodes.STATUS_CODE_OK) {
+          try (InputStream inputStream = response.getEntity().getContent()) {
+            result = objectMapper.readValue(inputStream, new TypeReference<List<T>>() {
+            });
+          }
+        } else if (statusCode == HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
+          result = new ArrayList<>();
+        } else {
+          throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
+              statusCode);
         }
       }
     } catch (IOException | URISyntaxException e) {
