@@ -38,20 +38,22 @@ import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.dicomwebfuse.auth.AuthAdc;
 import com.google.dicomwebfuse.dao.http.HttpClientFactory;
 import com.google.dicomwebfuse.dao.spec.DicomStorePathBuilder;
-import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.DicomStoresPathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancePathBuilder;
 import com.google.dicomwebfuse.dao.spec.InstancesPathBuilder;
 import com.google.dicomwebfuse.dao.spec.QueryBuilder;
 import com.google.dicomwebfuse.dao.spec.SeriesPathBuilder;
+import com.google.dicomwebfuse.dao.spec.SingleDicomStorePathBuilder;
 import com.google.dicomwebfuse.dao.spec.StudiesPathBuilder;
 import com.google.dicomwebfuse.entities.DicomPath;
 import com.google.dicomwebfuse.entities.DicomStore;
@@ -69,6 +71,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.http.HttpEntity;
@@ -142,7 +145,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_STUDY.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Study>>() {});
   }
 
   @Override
@@ -155,7 +158,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_STUDY_ID, queryBuilder.getStudyId())
         .setPath(path);
     List<Study> studies =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Study>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Study>>() {});
     if (studies.size() == 0) {
       throw new DicomFuseException("Study not found");
     }
@@ -173,7 +176,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_SERIES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Series>>() {});
   }
 
 
@@ -188,7 +191,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_SERIES_ID, queryBuilder.getSeriesId())
         .setPath(path);
     List<Series> series =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Series>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Series>>() {});
     if (series.size() == 0) {
       throw new DicomFuseException("Series not found");
     }
@@ -207,7 +210,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_LIMIT, VALUE_PARAM_MAX_LIMIT_FOR_INSTANCES.toString())
         .addParameter(PARAM_OFFSET, queryBuilder.getOffset().toString())
         .setPath(path);
-    return createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+    return createRequestForObjectsList(uriBuilder, new TypeReference<List<Instance>>() {});
   }
 
   @Override
@@ -222,7 +225,7 @@ public class FuseDaoImpl implements FuseDao {
         .addParameter(PARAM_INSTANCE_ID, queryBuilder.getInstanceId())
         .setPath(path);
     List<Instance> instances =
-        createRequestForObjectList(uriBuilder, new TypeReference<List<Instance>>() {});
+        createRequestForObjectsList(uriBuilder, new TypeReference<List<Instance>>() {});
     if (instances.size() == 0) {
       throw new DicomFuseException("Instance not found");
     }
@@ -263,7 +266,7 @@ public class FuseDaoImpl implements FuseDao {
   @Override
   public void createDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
     DicomStoresPathBuilder dicomStoresPathBuilder = new DicomStoresPathBuilder(queryBuilder);
-    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = new URIBuilder()
           .setScheme(SCHEME)
           .setHost(HEALTHCARE_HOST)
@@ -286,7 +289,7 @@ public class FuseDaoImpl implements FuseDao {
   @Override
   public void deleteDicomStore(QueryBuilder queryBuilder) throws DicomFuseException {
     DicomStorePathBuilder dicomStorePathBuilder = new DicomStorePathBuilder(queryBuilder);
-    try (CloseableHttpClient httpclient =  httpClientFactory.createHttpClient()) {
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
       URI uri = new URIBuilder()
           .setScheme(SCHEME)
           .setHost(HEALTHCARE_HOST)
@@ -318,6 +321,37 @@ public class FuseDaoImpl implements FuseDao {
         checkStatusCode(response, uri);
         try (InputStream inputStream = response.getEntity().getContent()) {
           result = objectMapper.readValue(inputStream, typeReference);
+        } catch (JsonParseException | JsonMappingException e) {
+          throw new DicomFuseException(e);
+        }
+      }
+    } catch (IOException | URISyntaxException e) {
+      throw new DicomFuseException(e);
+    }
+    return result;
+  }
+
+  private <T> List<T> createRequestForObjectsList(URIBuilder uriBuilder, TypeReference<List<T>> typeReference)
+      throws DicomFuseException {
+    List<T> result;
+    try (CloseableHttpClient httpclient = httpClientFactory.createHttpClient()) {
+      URI uri = uriBuilder.build();
+      HttpGet request = new HttpGet(uri);
+      request.addHeader(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF8);
+      GoogleCredentials credentials = authAdc.getCredentials();
+      String tokenValue = credentials.getAccessToken().getTokenValue();
+      request.addHeader(AUTHORIZATION, BEARER + tokenValue);
+      try (CloseableHttpResponse response = httpclient.execute(request)) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode == HttpStatusCodes.STATUS_CODE_OK) {
+          try (InputStream inputStream = response.getEntity().getContent()) {
+            result = objectMapper.readValue(inputStream, typeReference);
+          }
+        } else if (statusCode == HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
+          result = new ArrayList<T>();
+        } else {
+          throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
+              statusCode);
         }
       }
     } catch (IOException | URISyntaxException e) {
@@ -403,7 +437,7 @@ public class FuseDaoImpl implements FuseDao {
 
   private void checkStatusCode(CloseableHttpResponse response, URI uri) throws DicomFuseException {
     int statusCode = response.getStatusLine().getStatusCode();
-    if (statusCode != HttpStatusCodes.STATUS_CODE_OK || statusCode != HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
+    if (statusCode != HttpStatusCodes.STATUS_CODE_OK && statusCode != HttpStatusCodes.STATUS_CODE_NO_CONTENT) {
       throw new DicomFuseException("Failed HTTP " + response.getStatusLine() + " " + uri,
           statusCode);
     }
