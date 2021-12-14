@@ -31,7 +31,7 @@ echo "{\"tag_name\": \"${TAG_NAME}\",\"name\": \"${TAG_NAME}\"}" > request.json
 # Create a request for creating a release on GitHub page
 readonly resp_file="response.json"
 response_code="$(curl -# -X POST \
-  -H "Authorization: token ${TOKEN} \
+  -H "Authorization: token ${TOKEN}" \
   -H "Content-Type:application/json" \
   -H "Accept:application/json" \
   -w "%{http_code}" \
