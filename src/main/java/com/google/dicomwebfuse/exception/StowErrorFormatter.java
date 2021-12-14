@@ -15,22 +15,21 @@
 package com.google.dicomwebfuse.exception;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 
 public class StowErrorFormatter {
 
   public static final String CONTENT_TYPE_DICOM_XML = "application/dicom+xml";
 
-  public static String formatByMimeType(String errorBody, String mimeType){
-    String formattedError;
+  public static String formatByMimeType(String errorBody, String mimeType) {
     switch (mimeType) {
       case CONTENT_TYPE_DICOM_XML:
-        formattedError = Jsoup.parse(errorBody, "", Parser.xmlParser())
-            .toString();
-        break;
+        Document parsedError = Jsoup.parse(errorBody, "", Parser.xmlParser());
+        parsedError.outputSettings().prettyPrint(true);
+        return parsedError.toString();
       default:
-        formattedError = errorBody;
+        return errorBody;
     }
-    return formattedError;
   }
 }
